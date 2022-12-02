@@ -1,10 +1,7 @@
 #lang racket
-(require racket)
-(require threading)
+(require racket threading advent-of-code)
 
-(require "./read-aoc-input.rkt")
-
-(define calories (read-aoc-input "1"))
+(define calories (fetch-aoc-input (find-session) 2022 1))
 
 (define (calorie-+ elf)
   (~>> elf
@@ -14,6 +11,6 @@
 (~> calories
     (string-split "\n\n")
     (map (lambda v (~> v first (string-split "\n") calorie-+)) _)
-    (sort <)
-    (take-right 3)
+    (sort >)
+    (take 3)
     (foldl + 0 _))
