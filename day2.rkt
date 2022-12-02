@@ -4,8 +4,17 @@
 (define roshambo (fetch-aoc-input (find-session) 2022 2))
 
 ;; idea
-;; There are 3 dictionaries to keep track of:
+;; There are 3 sets of rules to keep track of:
 ;;  1. the rules of rock paper scissors
+;;    rules-gen makes 2 functions: rules and rules-rev
+;;  2. what ABC XYZ mean
+;;    translate-gen makes 2 functions: translate (pt 1) and translate-fixed (pt 2)
+;;  3. how many points each hand is worth. Handled by hand-score
+
+;; game-result calculates the outcome of a game
+;; for part b, the fix function modifies the way choice is made in order to obey new rules
+
+;; calculate-results parses the game ledger and provides the sum of the game scores
 
 (define rules-gen
   (let* ([*rules* (hash
@@ -33,10 +42,7 @@
 (match-define (list translate translate-fixed) translate-gen)
 
 (define (hand-score play)
-  (hash-ref (hash
-             "rock" 1
-             "paper" 2
-             "scissors" 3) play))
+  (hash-ref (hash "rock" 1 "paper" 2 "scissors" 3) play))
 
 (define (fix choice opponent)
   (let ([action (translate-fixed choice)])
@@ -53,14 +59,13 @@
           [(equal? (rules choice) opponent) (+ 6 hand-score)]
           [else hand-score])))
 
-(~>> roshambo
-    (string-split _ "\n")
-    (map string-split)
-    (map game-result)
-    (foldl + 0))
+(define (calculate-results ledger [fixed? #f])
+  (let ([game-result-fn (if fixed? (λ (r) (game-result r fixed?)) game-result)])
+      (~>> ledger
+           (string-split _ "\n")
+           (map string-split)
+           (map game-result-fn)
+           (foldl + 0))))
 
-(~>> roshambo
-    (string-split _ "\n")
-    (map string-split)
-    (map (λ (r) (game-result r #t)))
-    (foldl + 0))
+(calculate-results roshambo)     ;; pt 1
+(calculate-results roshambo #t)  ;; pt 2
