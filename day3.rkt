@@ -29,7 +29,7 @@
      (foldl + 0))
 
 ;; pt 2
-(~> rucksacks
+(~>> rucksacks
     (string-split _ "\n")
     (split-into _ 3)
     (map (compose
@@ -37,5 +37,5 @@
           set-first
           (λ (3tup) (set-intersect (first 3tup) (second 3tup) (third 3tup)))
           (λ (3tup) (map (compose list->set
-                                  string->list) 3tup))) _)
-    (foldl + 0 _))
+                                  string->list) 3tup))))
+    (foldl + 0))
