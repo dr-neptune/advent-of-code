@@ -15,6 +15,8 @@
       (append (list (take ls subls-size))
               (split-into (drop ls subls-size) subls-size))))
 
+(define (set-intersection* set-ls) (apply set-intersect set-ls))
+
 ;; pt 1
 (~>> rucksacks
      (string-split _ "\n")
@@ -23,10 +25,7 @@
                      (split-at _ (quotient (string-length ruck) 2))
                      values->list
                      (map list->set))))
-     (map (λ (split-ruck) (~>> split-ruck
-                        (apply set-intersect)
-                        set-first
-                        char->ranking)))
+     (map (compose char->ranking set-first set-intersection*))
      (foldl + 0))
 
 ;; pt 2
@@ -36,6 +35,6 @@
     (map (compose
           char->ranking
           set-first
-          (λ (3ruck) (apply set-intersect 3ruck))
+          set-intersection*
           (λ (3ruck) (map (compose list->set string->list) 3ruck))))
     (foldl + 0))
