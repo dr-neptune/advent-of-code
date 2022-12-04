@@ -18,12 +18,13 @@
 ;; pt 1
 (~>> rucksacks
      (string-split _ "\n")
-     (map (λ (v) (~> v
+     (map (λ (ruck) (~>> ruck
                      string->list
-                     (split-at _ (quotient (string-length v) 2))
+                     (split-at _ (quotient (string-length ruck) 2))
                      values->list
-                     (map list->set _))))
-     (map (λ (2ple) (~> (set-intersect (first 2ple) (second 2ple))
+                     (map list->set))))
+     (map (λ (split-ruck) (~>> split-ruck
+                        (apply set-intersect)
                         set-first
                         char->ranking)))
      (foldl + 0))
@@ -35,7 +36,6 @@
     (map (compose
           char->ranking
           set-first
-          (λ (3tup) (set-intersect (first 3tup) (second 3tup) (third 3tup)))
-          (λ (3tup) (map (compose list->set
-                                  string->list) 3tup))))
+          (λ (3ruck) (apply set-intersect 3ruck))
+          (λ (3ruck) (map (compose list->set string->list) 3ruck))))
     (foldl + 0))
