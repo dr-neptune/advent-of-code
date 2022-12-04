@@ -1,5 +1,5 @@
 #lang racket
-(require racket advent-of-code threading megaparsack megaparsack/text)
+(require racket advent-of-code threading megaparsack megaparsack/text rebellion/base/range racket/match)
 
 (define assignments (string-split (fetch-aoc-input (find-session) 2022 4)))
 
@@ -46,3 +46,33 @@
 (~>> assignments
      (map (compose not disjoint-lists? parse-assignment))
      (count identity))
+
+
+;; alternative implementation using range data structures and a macro
+(require racket advent-of-code threading megaparsack megaparsack/text rebellion/base/range
+         (for-syntax racket/match))
+
+(define assignments (string-split (fetch-aoc-input (find-session) 2022 4)))
+
+;; use parser combinators to turn "a-b,c-d" -> '((a b)(c d))
+(define (parse-assignment assignment)
+  "use parser combinators to parse each assignment"
+  (define integer-duo/p (many/p integer/p #:sep (char/p #\-)))
+  (define assignment-pairs/p (many/p integer-duo/p #:sep (char/p #\,)))
+  (parse-result! (parse-string assignment-pairs/p assignment)))
+
+;; macro to apply range comparator function and count instances
+(define-syntax-rule (count-range-comparator collection fn)
+  (~>> collection
+       (map (compose
+             (λ (pair) (map (λ (p) (apply closed-range p)) pair))
+             parse-assignment))
+       (map fn)
+       (count identity)))
+
+;; pt 1
+(count-range-comparator assignments (λ (duo) (or (apply range-encloses? duo)
+                                                 (apply range-encloses? (reverse duo)))))
+
+;; pt 2
+(count-range-comparator assignments (λ (duo) (apply range-overlaps? duo)))
