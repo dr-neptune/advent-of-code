@@ -5,8 +5,8 @@
 ;; separate instructions from supplies
 (match-define (list supplies instructions)
   (~>> (fetch-aoc-input (find-session) 2022 5)
-      (string-split _ "\n\n")
-      (map (λ (s) (string-split s "\n")))))
+       (string-split _ "\n\n")
+       (map (λ (s) (string-split s "\n")))))
 
 ;; use a parser to parse each supply
 (define triple/p
@@ -33,9 +33,9 @@
 
 ;; parse instructions
 (define instruction/p
-   (many/p
-    (do (many/p (or/p (char-between/p #\a #\z) space/p))
-        integer/p)))
+  (many/p
+   (do (many/p (or/p (char-between/p #\a #\z) space/p))
+       integer/p)))
 
 ;; "move x from y to z" -> '(x y z)
 (define (parse-instruction instruction)
