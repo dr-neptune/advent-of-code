@@ -40,6 +40,7 @@ test-cmds
 
 
 ;; parse commands
+;; $ cmd cmd-args -> ('CMD (cmd cmd-args))
 (define cmd-arg/p
   (do [initializer <- (char/p #\$)]
       [spacing <- space/p]
@@ -48,6 +49,7 @@ test-cmds
     [operand <- (many/p any-char/p)]
     (pure (list 'CMD (map list->string (list operator operand))))))
 
+;; $ cmd -> ('CMD cmd)
 (define cmd-no-arg/p
   (do [initializer <- (char/p #\$)]
       [spacing <- space/p]
@@ -55,12 +57,14 @@ test-cmds
     (pure (cons 'CMD (map list->string (list operator))))))
 
 ;; parse directory output
+;; dir a -> ('DIR dir)
 (define directory-name/p
   (do [dir-init <- (string/p "dir")]
       [spacing <- space/p]
     [dir-name <- (many/p letter/p)]
     (pure (cons 'DIR (~> dir-name list->string list)))))
 
+;; file-size file-name -> ('FILE file-name file-size)
 (define file-info/p
   (do [file-size-int <- integer/p]
       [spacing <- space/p]
@@ -71,13 +75,15 @@ test-cmds
 (define (parse-input input)
   (parse-result!
    (parse-string
-    (apply or/p (map (λ (p) (try/p p)) (list cmd-arg/p cmd-no-arg/p directory-name/p file-info/p)))
+    (apply or/p
+           (map (λ (p) (try/p p))
+                (list cmd-arg/p cmd-no-arg/p directory-name/p file-info/p)))
     input)))
 
 ;; get list of inputs
 (define cmds (map parse-input (string-split test-cmds "\n")))
 
-
+;; output of cmds
 '((CMD ("cd" "/"))
   (CMD "ls")
   (DIR "a")
