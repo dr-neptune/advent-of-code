@@ -44,32 +44,32 @@ test-cmds
 (define cmd-arg/p
   (do [initializer <- (char/p #\$)]
       [spacing <- space/p]
-    [operator <- (many/p letter/p)]
-    [cmd-space <- space/p]
-    [operand <- (many/p any-char/p)]
-    (pure (list 'CMD (map list->string (list operator operand))))))
+      [operator <- (many/p letter/p)]
+      [cmd-space <- space/p]
+      [operand <- (many/p any-char/p)]
+      (pure (list 'CMD (map list->string (list operator operand))))))
 
 ;; $ cmd -> ('CMD cmd)
 (define cmd-no-arg/p
   (do [initializer <- (char/p #\$)]
       [spacing <- space/p]
-    [operator <- (many/p letter/p)]
-    (pure (cons 'CMD (map list->string (list operator))))))
+      [operator <- (many/p letter/p)]
+      (pure (cons 'CMD (map list->string (list operator))))))
 
 ;; parse directory output
 ;; dir a -> ('DIR dir)
 (define directory-name/p
   (do [dir-init <- (string/p "dir")]
       [spacing <- space/p]
-    [dir-name <- (many/p letter/p)]
-    (pure (cons 'DIR (~> dir-name list->string list)))))
+      [dir-name <- (many/p letter/p)]
+      (pure (cons 'DIR (~> dir-name list->string list)))))
 
 ;; file-size file-name -> ('FILE file-name file-size)
 (define file-info/p
   (do [file-size-int <- integer/p]
       [spacing <- space/p]
-    [file-name <- (many/p (or/p letter/p (char/p #\.)))]
-    (pure (cons 'FILE (list (list->string file-name) file-size-int)))))
+      [file-name <- (many/p (or/p letter/p (char/p #\.)))]
+      (pure (cons 'FILE (list (list->string file-name) file-size-int)))))
 
 ;; tries applying all the different parsers
 (define (parse-input input)
