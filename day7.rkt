@@ -108,4 +108,74 @@ test-cmds
   (FILE "d.ext" 5626152)
   (FILE "k" 7214296))
 
+(first (cdadar cmds))
+
 ;; create files
+;; set starting location
+(current-directory "/home/michael/Documents/aoc22/")
+
+;; make temp dir and switch to it
+;; (define base-dir (make-temporary-directory))
+(make-directory (build-path (current-directory) "temp"))
+(current-directory (build-path (current-directory) "temp"))
+
+
+
+(define (make-file-with-size fname fsize)
+  (system (format "truncate -s ~a ~a" fsize fname)))
+
+;; (dir-exists-else-create (build-path base-dir "flub"))
+
+;; build out what to do when cd happens
+
+;; if directory exists? switch to it
+;; otherwise, make it and then switch to it
+
+;; when ls happens, just skip it
+
+;; when dir happens
+;; if exists, do nothing
+;; else create it
+
+;; when file happens
+;; if exists, do nothing
+;; else create it
+(define (dir-exists-else-create dir-path [switch-to #f])
+  (if (directory-exists? dir-path)
+      (current-directory dir-path)
+      (if switch-to
+          (begin
+            (make-directory dir-path)
+            (current-directory dir-path))
+          (make-directory dir-path))))
+
+(path->string (file-name-from-path (build-path (current-directory) "woopsie")))
+
+(~> (build-path (current-directory) "woopsie")
+    file-name-from-path
+    path->string)
+
+(define (file-exists-else-create file-path file-byte-size)
+  (if (file-exists? file-path)
+      #f
+      (make-file-with-size (~> file-path
+                               file-name-from-path
+                               path->string) file-byte-size)))
+
+(define (execute-command command)
+  (let* ([cmd-type (first command)]
+         [cmd-args (rest command)]
+         [first-arg (first cmd-args)]
+         [base-path ((curry build-path) (current-directory))])
+  (cond [(equal? cmd-type 'CMD)
+         (if (string? first-arg)  ;; ls, do nothing
+             #t
+             (let ([dir-name (second cmd-args)]) ;; operand
+               (if (equal? dir-name "..")
+                   (current-directory (build-path 'up))
+                   (dir-exists-else-create (base-path dir-name)))))]
+        [(equal? cmd-type 'DIR)
+         (dir-exists-else-create (base-path dir-name))]
+        [(equal? cmd-type 'FILE)
+         (file-exists-else-create (base-path first-arg) (second cmd-args))]
+        [else #f])))
