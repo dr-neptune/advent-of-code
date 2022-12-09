@@ -1,43 +1,8 @@
 #lang racket
 (require racket advent-of-code threading
-         megaparsack megaparsack/text data/monad data/applicative
-         try-catch)
+         megaparsack megaparsack/text data/monad data/applicative)
 
-;; idea
-;; make the files
-;; then get an rglob of directory size
-;; then sort > and take everything up to 100k
-;; then sum
-
-(define test-cmds #<<"
-$ cd /
-$ ls
-dir a
-14848514 b.txt
-8504156 c.dat
-dir d
-$ cd a
-$ ls
-dir e
-29116 f
-2557 g
-62596 h.lst
-$ cd e
-$ ls
-584 i
-$ cd ..
-$ cd ..
-$ cd d
-$ ls
-4060174 j
-8033020 d.log
-5626152 d.ext
-7214296 k
-"
-)
-test-cmds
-
-
+(define cmd-history (fetch-aoc-input (find-session) 2022 7))
 
 ;; parse commands
 ;; $ cmd cmd-args -> ('CMD (cmd cmd-args))
@@ -80,37 +45,12 @@ test-cmds
                 (list cmd-arg/p cmd-no-arg/p directory-name/p file-info/p)))
     input)))
 
-;; get list of inputs
-(define cmds (map parse-input (string-split test-cmds "\n")))
-
-;; output of cmds
-'((CMD ("cd" "/"))
-  (CMD "ls")
-  (DIR "a")
-  (FILE "b.txt" 14848514)
-  (FILE "c.dat" 8504156)
-  (DIR "d")
-  (CMD ("cd" "a"))
-  (CMD "ls")
-  (DIR "e")
-  (FILE "f" 29116)
-  (FILE "g" 2557)
-  (FILE "h.lst" 62596)
-  (CMD ("cd" "e"))
-  (CMD "ls")
-  (FILE "i" 584)
-  (CMD ("cd" ".."))
-  (CMD ("cd" ".."))
-  (CMD ("cd" "d"))
-  (CMD "ls")
-  (FILE "j" 4060174)
-  (FILE "d.log" 8033020)
-  (FILE "d.ext" 5626152)
-  (FILE "k" 7214296))
+;; get list of inputs in parsed format
+(define cmds (map parse-input (string-split cmd-history "\n")))
 
 ;; create files
 ;; set starting location
-(current-directory "/home/michael/Documents/aoc22/")
+(current-directory "~/Documents/aoc22/")
 
 ;; make temp dir and switch to it
 (make-directory (build-path (current-directory) "temp"))
@@ -157,3 +97,30 @@ test-cmds
 
 ;; create file structure
 (for-each execute-command cmds)
+
+;; part 1
+;; get size of a directory
+(define (directory-size directory)
+  (~>> directory
+       (find-files identity)
+       (filter file-exists?)
+       (map file-size)
+       (foldl + 0)))
+
+(define directory-sizes
+  (~>> (find-files identity)
+       (filter directory-exists?)
+       (map directory-size)))
+
+(~>> directory-sizes
+     (filter (λ (s) (< s 100000)))
+     (foldl + 0))
+
+;; part 2
+(define space-remaining
+  (let ([total-space 70000000])
+    (- total-space (directory-size (current-directory)))))
+
+(~>> directory-sizes
+     (filter (λ (s) (> s (- 30000000 space-remaining))))
+     (apply min))
