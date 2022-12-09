@@ -108,38 +108,18 @@ test-cmds
   (FILE "d.ext" 5626152)
   (FILE "k" 7214296))
 
-(first (cdadar cmds))
-
 ;; create files
 ;; set starting location
 (current-directory "/home/michael/Documents/aoc22/")
 
 ;; make temp dir and switch to it
-;; (define base-dir (make-temporary-directory))
 (make-directory (build-path (current-directory) "temp"))
 (current-directory (build-path (current-directory) "temp"))
 
-
-
+;; make file with a given size in bytes
 (define (make-file-with-size fname fsize)
   (system (format "truncate -s ~a ~a" fsize fname)))
 
-;; (dir-exists-else-create (build-path base-dir "flub"))
-
-;; build out what to do when cd happens
-
-;; if directory exists? switch to it
-;; otherwise, make it and then switch to it
-
-;; when ls happens, just skip it
-
-;; when dir happens
-;; if exists, do nothing
-;; else create it
-
-;; when file happens
-;; if exists, do nothing
-;; else create it
 (define (dir-exists-else-create dir-path [switch-to #f])
   (if (directory-exists? dir-path)
       (current-directory dir-path)
@@ -148,12 +128,6 @@ test-cmds
             (make-directory dir-path)
             (current-directory dir-path))
           (make-directory dir-path))))
-
-(path->string (file-name-from-path (build-path (current-directory) "woopsie")))
-
-(~> (build-path (current-directory) "woopsie")
-    file-name-from-path
-    path->string)
 
 (define (file-exists-else-create file-path file-byte-size)
   (if (file-exists? file-path)
@@ -170,12 +144,16 @@ test-cmds
   (cond [(equal? cmd-type 'CMD)
          (if (string? first-arg)  ;; ls, do nothing
              #t
-             (let ([dir-name (second cmd-args)]) ;; operand
-               (if (equal? dir-name "..")
-                   (current-directory (build-path 'up))
-                   (dir-exists-else-create (base-path dir-name)))))]
+             (let ([dir-name (cadar cmd-args)]) ;; operand
+               (cond [(equal? dir-name "/") #t]
+                     [(equal? dir-name "..") (current-directory (build-path 'up))]
+                     [else (dir-exists-else-create (base-path dir-name))])))]
         [(equal? cmd-type 'DIR)
-         (dir-exists-else-create (base-path dir-name))]
+         (let ([dir-name (first cmd-args)])
+           (dir-exists-else-create (base-path dir-name)))]
         [(equal? cmd-type 'FILE)
          (file-exists-else-create (base-path first-arg) (second cmd-args))]
         [else #f])))
+
+;; create file structure
+(for-each execute-command cmds)
