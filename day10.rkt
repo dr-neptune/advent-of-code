@@ -40,11 +40,10 @@
              [carry? #f]
              [carry-val 0])
     (begin
-      (begin
-        (cond [(and (<= (modulo clock 40) (add1 value))
-                    (>= (modulo clock 40) (sub1 value)))
-               (display "#")]
-              [else (display ".")]))
+      (cond [(and (<= (modulo clock 40) (add1 value))
+                  (>= (modulo clock 40) (sub1 value)))
+             (display "#")]
+            [else (display ".")])
       (cond [(empty? cmds) ""]
             [(equal? (first cmds) "noop")
              (iter (add1 clock) value (rest cmds) #f 0)]
