@@ -1,41 +1,7 @@
 #lang racket
-(require racket advent-of-code)
-
-(define expackets
-  #<<"
-[1,1,3,1,1]
-[1,1,5,1,1]
-
-[[1],[2,3,4]]
-[[1],4]
-
-[9]
-[[8,7,6]]
-
-[[4,4],4,4]
-[[4,4],4,4,4]
-
-[7,7,7,7]
-[7,7,7]
-
-[]
-[3]
-
-[[[]]]
-[[]]
-
-[1,[2,[3,[4,[5,6,7]]]],8,9]
-[1,[2,[3,[4,[5,6,0]]]],8,9]
-"
-  )
+(require racket threading advent-of-code)
 
 (define packets (fetch-aoc-input (find-session) 2022 13))
-
-;; idea
-;; parse these into lists
-;; heavy abuse nested equal and flatten
-;; ???
-;; profit
 
 ;; given input instructions, output a list of lists with proper nesting
 (define (packet->racket packets)
@@ -52,47 +18,46 @@
 
 (define packet-pairs (packet->racket packets))
 
-;; comparator logic
+;; comparator
 (define (cmp a b)
-  (cond [(andmap integer? (list a b))
-         (cond [(< a b) #t]
-               [(equal? a b) #f])]
-        [(ormap integer? (list a b))
-         (apply cmp (map (λ (v) (if (integer? v) (list v) v)) (list a b)))]
-        [else (lscmp a b)]))
-
-
-(cmp 1 2)
-(cmp 2 1)
-(cmp 2 '(1))
-(cmp 1 '(2))
-
-(define (lscmp a b)
-  (begin
-    (println (format "a: ~a b: ~a" a b))
-    (cond
-      [(andmap empty? (list a b)) #f]
-      [(and (empty? a) (not (empty? b))) #t]
-      [(and (empty? b) (not (empty? a))) #f]
-      [(andmap list? (list a b))
-       (or
-        (lscmp (first a) (first b))
-        (lscmp (rest a)(rest b)))]
-      [else (cmp a b)])))
-
-
-(lscmp lsa lsb)
-
-(cmp '(1 1 3 1 1) '(1 1 5 1 1))              ;; should be #t
-(cmp '((1)(2 3 4)) '((1) 4))                 ;; should be #t
-(cmp '(9) '((8 7 6)))                        ;; should be #f
-(cmp '((4 4) 4 4) '((4 4) 4 4 4))            ;; should be #t
-(cmp '(7 7 7 7) '(7 7 7))                    ;; should be #f
-(cmp '() '(3))                               ;; should be #t
-(cmp '((())) '(()))                          ;; should be #f
-(cmp '(1 (2 (3 (4 (5 6 7)))) 8 9)            ;; should be #f
-     '(1 (2 (3 (4 (5 6 0)))) 8 9))
-
+  (define (get-results a b)
+    (cond [(and (integer? a) (integer? b))
+                  (cond [(< a b) #t]
+                        [(< b a) #f]
+                        [else 'pass])]
+          ;; handle int / list
+          [(ormap integer? (list a b))
+           (apply cmp (map (λ (v) (if (integer? v) (list v) v)) (list a b)))]
+          ;; list / list
+          [else
+           (cond [(and (empty? a) (not (empty? b))) #t]
+                 [(and (empty? b) (not (empty? a))) #f]
+                 [(andmap empty? (list a b)) 'pass]
+                 [else
+                  (cons
+                   (get-results (first a) (first b))
+                   (get-results (rest a) (rest b)))])]))
+    (filter boolean? (flatten (get-results a b))))
 
 ;; pt1
-(foldl + 0 (map add1 (indexes-where (map (λ (p) (apply cmp p)) packet-pairs) (λ (v) (equal? v #t)))))
+(~>> (map (λ (p) (first (apply cmp p))) packet-pairs)
+     (indexes-where _ (λ (v) (equal? v #t)))
+     (map add1)
+     (foldl + 0))
+
+;; pt2
+;; flatten the input list
+(define all-packets
+  (let results ([pairs packet-pairs]
+                [new-ls '(((2)) ((6)))])                  ;; add divider packets
+    (cond [(empty? pairs) new-ls]
+          [else (results (rest pairs)
+                         (append new-ls (list (caar pairs) (cadar pairs))))])))
+
+;; now we need to use cmp as a comparator to sort them all
+(define sorted-packets (sort all-packets (λ (a b) (first (cmp a b)))))
+
+(~>> sorted-packets
+     (indexes-where _ (λ (v) (member v '(((2)) ((6))))))
+     (map add1)
+     (apply *))
