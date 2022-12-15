@@ -1,5 +1,5 @@
 #lang racket
-(require racket math/array threading advent-of-code racket/pretty (only-in br/list values->list))
+(require racket math/array threading advent-of-code)
 
 ;; get data
 (define trees (fetch-aoc-input (find-session) 2022 8))
@@ -10,6 +10,7 @@
        (map (compose list->array (λ (c) (map char->integer c)) string->list))
        array-list->array))
 
+;; helper functions
 ;; split list into 3 at pos. ex ((1 2 3 4 5) 2) -> ((1 2) 3 (4 5))
 (define (split-trio ls pos)
   (let-values ([(before after) (split-at ls pos)])
@@ -35,6 +36,7 @@
                 [y (in-range 1 (sub1 (second arr-shape)))])
       (score-fn x y array))))
 
+;; pt 1
 ;; scoring function
 (define (check-visibility-cross-section trio)
   (get-score trio (λ (base-tree side1 side2)
@@ -49,7 +51,7 @@
 ;; application to square
 (define visibility-map (apply-scores visible? tree-heights))
 
-;; pt 1
+;; result
 (+ (count identity visibility-map)
    (* 4 (sub1 (vector-ref (array-shape tree-heights) 0))))
 
