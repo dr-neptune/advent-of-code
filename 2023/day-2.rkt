@@ -48,4 +48,22 @@ parse each line, keep a max for each draw
 ;; get game and number, then remove from string
 (regexp-replace* #px"Game \\d+: " "Game 1: 3 blue, 4 red" "")
 
+
+
+;; get game number
 (first (filter char-numeric? (string->list (first (regexp-match* #px"Game \\d+:" "Game 1: 3 blue, 4 red")))))
+;; get first draw
+(regexp-replace* #px"Game \\d+: " "Game 1: 3 blue, 4 red" "")
+
+()
+
+
+(let ([games inter])
+  (for* ([game games]
+         [draw game])
+    (let ([game-match (regexp-match* #px"Game \\d+:" draw)])
+      (if game-match
+          (let ([first-draw (regexp-replace* #px"Game \\d+: " draw "")])
+            (displayln first-draw))
+          (displayln draw))))
+  )
