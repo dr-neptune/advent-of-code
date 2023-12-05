@@ -1,10 +1,10 @@
 #lang racket
-(require racket advent-of-code)
+(require racket racket/hash advent-of-code)
 
-(define schematic (fetch-aoc-input (find-session) 2023 3))
+(define schematic (string-split (fetch-aoc-input (find-session) 2023 3) "\n"))
 
 (define schematic
-  "467..114..
+  (string-split "467..114..
 ...*......
 ..35..633.
 ......#...
@@ -13,10 +13,7 @@
 ..592.....
 ......755.
 ...$.*....
-.664.598..")
-
-
-(string-split schematic "\n")
+.664.598.." "\n"))
 
 
 #|
@@ -48,27 +45,6 @@ if so, grab it
 (define (char-alphanumeric? char)
   (or (char-numeric? char) (char-alphabetic? char) (char=? char #\.)))
 
-;; Testing the function
-(define symbol-indices
-  (matrix-indexes-of
-    (map string->list '("467..114.." "...*......" "..35..633." "......#..."
-                        "617*......" ".....+.58." "..592....." "......755."
-                        "...$.*...." ".664.598.."))
-    not-alpha-numeric-or-dot?))
-
-(define num-indices
-  (matrix-indexes-of
-    (map string->list '("467..114.." "...*......" "..35..633." "......#..."
-                        "617*......" ".....+.58." "..592....." "......755."
-                        "...$.*...." ".664.598.."))
-    char-numeric?))
-
-
-
-;; different tactic
-;; get the coordinates of every number
-;; write a function that checks if any of them are adjacent to a symbol
-
 (define (are-coordinates-adjacent? coord1 coord2)
   (let* ([x1 (car coord1)]
          [y1 (cadr coord1)]
@@ -78,27 +54,135 @@ if so, grab it
          [dy (abs (- y1 y2))])
     (and (<= dx 1) (<= dy 1))))
 
+(define (matrix-ref lst x y)
+  (string-ref (list-ref lst y) x))
 
-(map
- (λ)
- (group-by
- car
- (for*/list ([symbol-coord symbol-indices]
-             [num-coord num-indices]
-             #:when (are-coordinates-adjacent? symbol-coord num-coord))
-   (list symbol-coord num-coord))))
+(define (char->digit char)
+  (- (char->integer char) (char->integer #\0)))
 
-'((((3 1) (2 0)) ((3 1) (3 2)) ((3 1) (2 2)))
-  (((6 3) (7 2)) ((6 3) (6 2)))
-  (((3 4) (2 4)))
-  (((5 5) (4 6)))
-  (((5 8) (6 7)) ((5 8) (6 9)) ((5 8) (5 9)))
-  (((3 8) (3 9)) ((3 8) (2 9))))
+(define (list->number lst)
+  (let loop ([lst lst] [result 0])
+    (if (null? lst)
+        result
+        (loop (cdr lst) (+ (* result 10) (car lst))))))
+
+(define (find-numbers-and-coordinates str [y-val 0])
+  (let loop ([chars (string->list str)]
+             [index 0]
+             [current-number '()]
+             [numbers '()]
+             [coordinates '()])
+    (cond
+      [(null? chars)
+       (if (null? current-number)
+           numbers
+           (reverse (cons (list (list->number (reverse current-number)) (reverse coordinates)) numbers)))]
+      [(char-numeric? (car chars))
+       (loop (cdr chars)
+             (add1 index)
+             (cons (char->digit (car chars)) current-number)
+             numbers
+             (cons (list index y-val) coordinates))]
+      [else
+       (loop (cdr chars)
+             (add1 index)
+             '()
+             (if (null? current-number)
+                 numbers
+                 (reverse (cons (list (list->number (reverse current-number)) (reverse coordinates)) numbers)))
+             '())])))
+
+(define (convert-to-hashmap num-coord-list)
+  (let ([hashmap (make-hash)])
+    (for-each (lambda (num-coord-pair)
+                (when (not (null? num-coord-pair)) ; Skip empty lists
+                  (let* ([number (car num-coord-pair)]
+                         [coords (cadr num-coord-pair)])
+                    (for-each (lambda (coord)
+                                (hash-set! hashmap coord number))
+                              coords))))
+              num-coord-list)
+    hashmap))
+
+(define symbol-indices
+  (matrix-indexes-of
+    (map string->list schematic)
+    not-alpha-numeric-or-dot?))
+
+(define num-indices
+  (matrix-indexes-of
+    (map string->list schematic)
+    char-numeric?))
+
+(define num-coords
+  (map find-numbers-and-coordinates schematic (stream->list (in-range (length schematic)))))
+
+(((467 ((0 0) (1 0) (2 0))) (114 ((5 0) (6 0) (7 0))))
+ ()
+ ((35 ((2 2) (3 2))) (633 ((6 2) (7 2) (8 2))))
+ ()
+ ((617 ((0 4) (1 4) (2 4))))
+ ((58 ((7 5) (8 5))))
+ ((592 ((2 6) (3 6) (4 6))))
+ ((755 ((6 7) (7 7) (8 7))))
+ ()
+ ((664 ((1 9) (2 9) (3 9))) (598 ((5 9) (6 9) (7 9)))))
+
+(define (num-coord-hash schematic)
+  (let ([schematics-coords
+         (map find-numbers-and-coordinates schematic (stream->list (in-range (length schematic))))])
+    (let ([hsh (make-hash)])
+      (begin
+        (for ([h (map convert-to-hashmap schematics-coords)])
+          (hash-union! hsh h))
+        hsh))))
+
+(define coord->number (num-coord-hash schematic))
 
 
-(((3 1) (2 0)) ((3 1) (3 2)) ((3 1) (2 2)))
-(((3 1) (2 0)) ((3 1) (3 2)) ((3 1) (2 2)))
+'(((1 9) . 664)
+  ((8 5) . 58)
+  ((3 2) . 35)
+  ((6 7) . 755)
+  ((5 0) . 114)
+  ((2 4) . 617)
+  ((3 9) . 664)
+  ((6 9) . 598)
+  ((4 6) . 592)
+  ((7 7) . 755)
+  ((8 2) . 633)
+  ((1 4) . 617)
+  ((2 0) . 467)
+  ((6 0) . 114)
+  ((2 2) . 35)
+  ((7 5) . 58)
+  ((1 0) . 467)
+  ((7 2) . 633)
+  ((0 0) . 467)
+  ((6 2) . 633)
+  ((5 9) . 598)
+  ((3 6) . 592)
+  ((2 6) . 592)
+  ((0 4) . 617)
+  ((8 7) . 755)
+  ((7 0) . 114)
+  ((2 9) . 664)
+  ((7 9) . 598))
 
+
+;; (map convert-to-hashmap (map find-numbers-and-coordinates schematic (stream->list (in-range (length schematic)))))
+
+
+(#hash(((6 0) . 114) ((2 0) . 467) ((0 0) . 467) ((1 0) . 467) ((7 0) . 114) ((5 0) . 114))
+ #hash()
+ #hash(((8 2) . 633) ((3 2) . 35) ((7 2) . 633) ((2 2) . 35) ((6 2) . 633))
+ #hash()
+ #hash(((0 4) . 617) ((1 4) . 617) ((2 4) . 617))
+ #hash(((8 5) . 58) ((7 5) . 58))
+ #hash(((4 6) . 592) ((2 6) . 592) ((3 6) . 592))
+ #hash(((7 7) . 755) ((8 7) . 755) ((6 7) . 755))
+ #hash()
+ #hash(((6 9) . 598) ((3 9) . 664) ((1 9) . 664) ((5 9) . 598) ((7 9) . 598) ((2 9) . 664)))
 
 '("467..114.."
   "...*......"
@@ -111,18 +195,114 @@ if so, grab it
   "...$.*...."
   ".664.598..")
 
-
-(define (matrix-ref lst x y)
-  (string-ref (list-ref lst y) x))
-
 #|
 
 idea
-given a coordinate, take characters from the left and right as long as they satisfy a predicate
+keep hsh tables split out
+iterate through every hash table
+summate all the values found that match
 
 |#
 
 
-(let ([exstr "467..114.."]
-      [excoord '(2 0)])
-  (string-ref exstr (first excoord)))
+;; (foldl + 0 (flatten (map
+;;  (λ (row) (remove-duplicates (flatten (map cdr row))))
+;;  (group-by
+;;   car
+;;   (for*/list ([symbol-coord symbol-indices]
+;;               [num-coord num-indices]
+;;               #:when (are-coordinates-adjacent? symbol-coord num-coord))
+;;     (list symbol-coord (hash-ref coord->number num-coord)))))))
+
+
+(apply + (remove-duplicates (flatten (map
+ (λ (row)
+   (flatten (map cdr row)))
+ (group-by
+  car
+  (for*/list ([symbol-coord symbol-indices]
+              [num-coord num-indices]
+              #:when (are-coordinates-adjacent? symbol-coord num-coord))
+    (list symbol-coord (hash-ref coord->number num-coord))))))))
+
+
+(apply + (flatten (map cdr
+ (for*/list ([symbol-coord symbol-indices]
+            [num-coord num-indices]
+            #:when (are-coordinates-adjacent? symbol-coord num-coord))
+  (list symbol-coord (hash-ref coord->number num-coord))))))
+
+
+'((((3 1) 467) ((3 1) 35) ((3 1) 35))
+  (((6 3) 633) ((6 3) 633))
+  (((3 4) 617))
+  (((5 5) 592))
+  (((5 8) 755) ((5 8) 598) ((5 8) 598))
+  (((3 8) 664) ((3 8) 664)))
+
+'((467 35 35) (633 633) (617) (592) (755 598 598) (664 664))
+
+'(((3 1) 467)
+  ((3 1) 35)
+  ((3 1) 35)
+  ((6 3) 633)
+  ((6 3) 633)
+  ((3 4) 617)
+  ((5 5) 592)
+  ((5 8) 755)
+  ((5 8) 598)
+  ((5 8) 598)
+  ((3 8) 664)
+  ((3 8) 664))
+
+
+(apply + (remove-duplicates
+ (flatten (map
+ cdr
+ (for*/list ([symbol-coord symbol-indices]
+              [num-coord num-indices]
+              #:when (are-coordinates-adjacent? symbol-coord num-coord))
+    (list symbol-coord (hash-ref coord->number num-coord)))
+))))
+
+;; (((3 1) 467)
+;;  ((3 1) 35)
+;;  ((3 1) 35)
+;;  ((6 3) 633)
+;;  ((6 3) 633)
+;;  ((3 4) 617)
+;;  ((5 5) 592)
+;;  ((5 8) 755)
+;;  ((5 8) 598)
+;;  ((5 8) 598)
+;;  ((3 8) 664)
+;;  ((3 8) 664))
+
+;; '(((1 9) . 664)
+;;   ((8 5) . 58)
+;;   ((3 2) . 35)
+;;   ((6 7) . 755)
+;;   ((5 0) . 114)
+;;   ((2 4) . 617)
+;;   ((3 9) . 664)
+;;   ((6 9) . 598)
+;;   ((4 6) . 592)
+;;   ((7 7) . 755)
+;;   ((8 2) . 633)
+;;   ((1 4) . 617)
+;;   ((2 0) . 467)
+;;   ((6 0) . 114)
+;;   ((2 2) . 35)
+;;   ((7 5) . 58)
+;;   ((1 0) . 467)
+;;   ((7 2) . 633)
+;;   ((0 0) . 467)
+;;   ((6 2) . 633)
+;;   ((5 9) . 598)
+;;   ((3 6) . 592)
+;;   ((2 6) . 592)
+;;   ((0 4) . 617)
+;;   ((8 7) . 755)
+;;   ((7 0) . 114)
+;;   ((2 9) . 664)
+;;   ((7 9) . 598))
