@@ -1,69 +1,47 @@
 #lang racket
 (require racket advent-of-code)
 
-(define bag-draws (fetch-aoc-input (find-session) 2023 2)
+(define bag-draws
+  (map (λ (s) (map string-trim (string-split s ";")))
+       (string-split (fetch-aoc-input (find-session) 2023 2) "\n")))
 
-  )
+(define (flatten-depth lst [depth 1])
+  (cond [(<= depth 0) lst]
+        [(not (list? lst)) (list lst)]
+        [else (append-map (lambda (x) (flatten-depth x (sub1 depth))) lst)]))
 
-(string-split ex-bag-draws "\n")
+(define (val-filter ht predicate)
+  (for/hash ([(k v) (in-hash ht)] #:when (predicate v)) (values k v)))
 
-(define ex-bag-draws "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
-Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
-Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
-Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
-Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green")
+;; part 1
+(define (parse-draws draw-string)
+  #| "2 blue, 1 red, 2 green" -> '((2 . "blue") (1 . "red") (2 . "green")) |#
+  (map
+   (λ (s) (let ([vals (string-split s)])
+            (cons (string->number (first vals))
+                  (last vals))))
+   (map string-trim (string-split draw-string ","))))
 
-(define inter (map (λ (s) (map string-trim (string-split s ";"))) (string-split ex-bag-draws "\n")))
+(define game-hash
+  (let ([games bag-draws])
+    (for*/hash ([game games]
+                [draw game])
+      (let ([game-match (regexp-match* #px"Game \\d+" draw)])
+        (if (not (empty? game-match))
+            (let ([first-draw (regexp-replace* #px"Game \\d+: " draw "")])
+              (values game-match (cons (parse-draws first-draw)
+                                       (map parse-draws (rest game)))))
+            (values game-match (parse-draws draw)))))))
 
+(define draw-max-counts
+  (for/hash ([game (filter (compose not empty?) (hash-keys game-hash))])
+    (values game
+            (map (λ (ls) (apply max (map car ls)))
+                 (group-by cdr (sort (flatten-depth (hash-ref game-hash game))
+                                     #:key cdr string<?))))))
+(apply + (map
+          (compose string->number cadr string-split)
+          (flatten (hash-keys (val-filter draw-max-counts (λ (val) (andmap <= val '(14 13 12))))))))
 
-
-'(("Game 1: 3 blue, 4 red" "1 red, 2 green, 6 blue" "2 green")
-  ("Game 2: 1 blue, 2 green" "3 green, 4 blue, 1 red" "1 green, 1 blue")
-  ("Game 3: 8 green, 6 blue, 20 red" "5 blue, 4 red, 13 green" "5 green, 1 red")
-  ("Game 4: 1 green, 3 red, 6 blue" "3 green, 6 red" "3 green, 15 blue, 14 red")
-  ("Game 5: 6 red, 1 blue, 3 green" "2 blue, 1 red, 2 green"))
-
-(string-split (first (string-split ex-bag-draws "\n")) ";")
- (regexp-replace* #px"Game \\d+: " (first (string-split (first (string-split ex-bag-draws "\n")) ";")) "")
-
-(define (get-draws games)
-  (map ))
-
-#|
-
-idea
-
-parse each line, keep a max for each draw
-
-|#
-
-;; get vals for regular hand
-(map
- (λ (s) (let ([vals (string-split s)])
-          (cons (string->number (first vals))
-                (last vals))))
- (map string-trim (string-split "3 green, 4 blue, 1 red" ",")))
-
-
-;; get game and number, then remove from string
-(regexp-replace* #px"Game \\d+: " "Game 1: 3 blue, 4 red" "")
-
-
-
-;; get game number
-(first (filter char-numeric? (string->list (first (regexp-match* #px"Game \\d+:" "Game 1: 3 blue, 4 red")))))
-;; get first draw
-(regexp-replace* #px"Game \\d+: " "Game 1: 3 blue, 4 red" "")
-
-()
-
-
-(let ([games inter])
-  (for* ([game games]
-         [draw game])
-    (let ([game-match (regexp-match* #px"Game \\d+:" draw)])
-      (if game-match
-          (let ([first-draw (regexp-replace* #px"Game \\d+: " draw "")])
-            (displayln first-draw))
-          (displayln draw))))
-  )
+;; part 2
+(apply + (hash-map draw-max-counts (λ (k v) (apply * v))))
