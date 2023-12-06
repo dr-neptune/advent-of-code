@@ -50,6 +50,18 @@
   (let* ([digit-concat (compose digit-list->int flatten (curry map int->digit-list))]
          [concat-digit-list (λ (digit-list) (digit-concat digit-list))]
          [get-concat-num (λ (f) (concat-digit-list (map f time-dists)))])
-    (list (cons (get-concat-num car) (get-concat-num cdr)))))
+    (cons (get-concat-num car) (get-concat-num cdr))))
 
-(winning-ways concat-time-dists)
+(winning-ways (list concat-time-dists))
+
+;; part 2 with math
+;; f(x) = x(t - x) = xt - x^2
+;; we want xt - x^2 > d -> xt - x^2 - d > 0 -> -x^2 + xt - d > 0
+;; -b +- sqrt(b^2 - 4ac) / 2a
+;; a = -1 b = t c = -d
+
+(match-let ([(cons t d) concat-time-dists])
+  (let ([discriminant (- (* t t) (* 4 d))])
+    (exact-ceiling
+     (- (/ (+ t (sqrt discriminant)) 2)
+        (/ (- t (sqrt discriminant)) 2)))))
