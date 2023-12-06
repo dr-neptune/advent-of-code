@@ -1,9 +1,5 @@
 #lang racket
-(require racket advent-of-code
-         data/applicative
-         data/monad
-         megaparsack
-         megaparsack/text)
+
 
 (define scratch-cards (string-split (fetch-aoc-input (find-session) 2023 4) "\n"))
 
@@ -133,5 +129,3 @@ for curr count times, add each of the following numbers
           (hash-update! hsh-counter key (λ (v) (+ v ticket)) 1))
         (displayln (format "nt: ~a num take: ~a to add: ~a" num-tickets num-to-take tickets-to-add)))
       )))
-
-(map (curry * 2) '(1 2 3))
