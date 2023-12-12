@@ -70,33 +70,84 @@ idea
 ;;                             [else (loop (rest cr) vals)]))]))])))
 
 
-(define inter (parse-condition-record (fourth condition-records)))
+(define inter (parse-condition-record (first condition-records)))
+
+(define (end-state grid vals)
+  (cond [(and (empty? grid) (empty? vals)) 1]
+        [(or (empty? grid) (empty? vals)) 0]
+        [(> (first vals) (length grid)) 0]
+        [else #f]))
 
 (match-let ([(list grid vals) inter])
   (let loop ([cr grid]
              [vals vals])
-    (displayln (format "~a ~a" cr vals))
-    (cond [(or (and (empty? vals)
-                    (all-equal? cr '(#\.)))
-               (and (empty? vals) (empty? cr)))
-           (begin
-             (displayln "reached endpoint 1")
-             1)]
-          [(or (empty? vals)
-               (empty? cr))
-           (begin
-             (displayln "reached endpoint 0")
-             0)]
-          [(> (first vals) (length cr)) (begin
-                                          (displayln "reached endpoint 0.2")
-                                          0)]
-          [else
-           (let ([f (first cr)])
-             (match f
-               [#\. (loop (rest cr) vals)]
-               [#\? (+ (loop (cons #\# (rest cr)) vals)
-                       (loop (cons #\. (rest cr)) vals))]
-               [#\# (let* ([next-vals (take cr (first vals))]
-                           [vals-eq? (all-equal? next-vals '(#\# #\?))])
-                      (cond [vals-eq? (loop (drop cr (add1 (first vals))) (rest vals))]
-                            [else (loop (rest cr) vals)]))]))])))
+    (let ([end-point (end-state cr vals)])
+      (if (false? end-point)
+          (let ([f (first cr)])
+            (match f
+              [#\. (loop (rest cr) vals)]
+              [#\? (+ (loop (cons #\# (rest cr)) vals)
+                      (loop (cons #\. (rest cr)) vals))]
+              [#\# (let* ([next-vals (take cr (first vals))]
+                          [vals-eq? (all-equal? next-vals '(#\# #\?))])
+                     (cond [vals-eq? (loop (drop cr (first vals)) (rest vals))]
+                           [else (loop (rest cr) vals)]))]))
+          end-point))))
+
+
+;; (match-let ([(list grid vals) inter])
+;;   (let loop ([cr grid]
+;;              [vals vals])
+;;     (displayln (format "~a ~a" cr vals))
+;;     (cond [(or (and (empty? vals)
+;;                     (all-equal? cr '(#\.)))
+;;                (and (empty? vals) (empty? cr)))
+;;            (begin
+;;              (displayln "reached endpoint 1")
+;;              1)]
+;;           [(or (empty? vals)
+;;                (empty? cr))
+;;            (begin
+;;              (displayln "reached endpoint 0")
+;;              0)]
+;;           [(> (first vals) (length cr)) (begin
+;;                                           (displayln "reached endpoint 0.2")
+;;                                           0)]
+;;           [else
+;;            (let ([f (first cr)])
+;;              (match f
+;;                [#\. (loop (rest cr) vals)]
+;;                [#\? (+ (loop (cons #\# (rest cr)) vals)
+;;                        (loop (cons #\. (rest cr)) vals))]
+;;                [#\# (let* ([next-vals (take cr (first vals))]
+;;                            [vals-eq? (all-equal? next-vals '(#\# #\?))])
+;;                       (cond [vals-eq? (loop (drop cr (first vals)) (rest vals))]
+;;                             [else (loop (rest cr) vals)]))]))])))
+
+(define inter (parse-condition-record (first condition-records)))
+
+(define (end-state grid vals)
+  (cond [(and (empty? grid) (empty? vals)) (begin (displayln "exit 1") 1)]
+        [(or (empty? grid) (empty? vals)) (begin (displayln "exit 0") 0)]
+        [(> (first vals) (length grid)) (begin (displayln "exit 0.2") 0)]
+        [else #f]))
+
+(match-let ([(list grid vals) inter])
+  (let loop ([cr grid]
+             [vals vals])
+    (let ([end-point (end-state cr vals)])
+      (if (false? end-point)
+          (let ([f (first cr)])
+            (displayln (format "~a ~a ~a" cr vals f))
+            (match f
+              [#\. (loop (rest cr) vals)]
+              [#\? (cons
+                     (loop (cons #\# (rest cr)) vals)
+                     (loop (cons #\. (rest cr)) vals))]
+              [#\# (let* ([next-vals (take cr (first vals))]
+                          [vals-eq? (all-equal? next-vals '(#\# #\?))])
+                     (cond [vals-eq? (loop (drop cr (first vals)) (rest vals))]
+                           [else (loop (drop cr (first vals)) vals)]))]))
+          end-point))))
+
+;; dfs
