@@ -25,8 +25,6 @@ idea
 
 |#
 
-(define (transpose lst)
-  (apply map list lst))
 
 (define (expand-space image)
   ;; add horizontally
