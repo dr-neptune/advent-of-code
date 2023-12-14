@@ -146,4 +146,50 @@ then find mid-point?
 ;; we need a way to batch things up as a group to signify a reflection
 ;; then for each group, we need to find a middle and then find the rows above
 
-;; maybe center: sort by car, find midpoint
+;; a mirror point is a pair in which (a b) are within 1 of each other
+(let ([reflects (config-selector (last mirrors) identity identity)])
+  (map (compose add1 first) (filter (λ (p) (equal? (add1 (first p)) (second p))) reflects)))
+
+
+(define (get-n-distances reflection-values)
+  (map (compose add1 first) (curry filter (λ (p) (equal? (add1 (first p)) (second p))) reflection-values)))
+
+(apply +
+       (map
+        (curryr config-selector
+                (λ (vals)
+                  (apply + (get-n-distances vals)))
+                (λ (vals) (* 100 (apply + (get-n-distances vals)))))
+        (list ex1 ex2)))
+
+(apply +
+       (map
+        (curryr config-selector
+                (λ (vals)
+                  (apply + (get-n-distances vals)))
+                (λ (vals) (* 100 (apply + (get-n-distances vals)))))
+        mirrors))
+
+
+;; idea
+;; we want the best line of symmetry
+;; AND we want to ignore any extraneous lines
+;; maybe instead of taking
+
+(config-selector (last mirrors) identity identity)
+
+("##....##.####"
+ ".#...##.###.."
+ ".#.#.....#.#."
+ ".##..#.#.#.##"
+ ".....#.##.#.#"
+ ".....#.##.#.#"
+ ".##..#.#.#.##"
+ ".#.##....#.#."
+ ".#...##.###.."
+ "##....##.####"
+ ".############"
+ "..####.###.##"
+ "..####.###.##"
+ ".############"
+ "##....##.####")
