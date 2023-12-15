@@ -61,7 +61,6 @@
         #f
         (let ([tort (vector-ref vec tort-pos)]
               [hare (vector-ref vec hare-pos)])
-          ;; (displayln (format "~a: ~a ~a: ~a" tort-pos tort hare-pos hare))
           (if (equal? tort hare)
               #t
               (loop (add1 tort-pos)
@@ -69,12 +68,12 @@
 
 ;; get pre run out iteration count and cycle length
 (define-values (pre cycle-length)
-  (let ([iters 1000])
+  (let ([iters 500])
     (let loop ([num-iters iters]
                [shifted-platform platform]
                [history '()]
                [cycles '()])
-      (cond [(zero? num-iters) (match-let ([(list* pre cycle-ls) (reverse cycles)])
+      (cond [(zero? num-iters) (match-let ([(list* pre cycle-ls) (map inexact->exact (reverse cycles))])
                                  (values pre (first (remove-duplicates (map (λ (a b) (/ (- b a) 2)) cycle-ls (rest cycle-ls))))))]
             [else
              (let ([round ((compose tilt-east tilt-south tilt-west tilt-north) shifted-platform)])
