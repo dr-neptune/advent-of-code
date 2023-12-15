@@ -109,8 +109,7 @@ O..#..O#.#....#.O....O...#.OO.....O.O...O.#.###.#.O..O.O.#.....O.#......O#.....O
 ..........O..O#...#...#..#..O..O...O#..O#OOO#......OOO#O..O.O.#O...O#..#O.OO..O##..O##O...O.O#.....#
 #...#O..O.......O.O##.OO.#.#O..O.....O...#..O..O......O...#....#..O..O....##.....#.#...O.........#..
 #....O.....O..O......#..#..........O..OO.#..##.....#..O...##....O.O..#.#O.#....OO.#....#.O...O...#O.
-.......#..#.O..#....O......OOO.#....#O#.O..O..O#O#.##.#.#.#.............#O##OO.#.#O.#....O.O.#......
-"))
+.......#..#.O..#....O......OOO.#....#O#.O..O..O#O#.##.#.#.#.............#O##OO.#.#O.#....O.O.#......"))
 
 (define platform (prep-input
 "O....#....
@@ -156,11 +155,11 @@ this takes a row and pushes everything to the left
 |#
 
 ;; shift east
-(reverse (shift-rocks (reverse '("O" "." "." "." "O" "#" "." "." "O" "."))))
+;; (reverse (shift-rocks (reverse '("O" "." "." "." "O" "#" "." "." "O" "."))))
 
 
 ;; tilt south
-(shift-rocks '("O" "." "." "." "O" "#" "." "." "O" "."))
+;; (shift-rocks '("O" "." "." "." "O" "#" "." "." "O" "."))
 
 
 
@@ -180,69 +179,71 @@ this takes a row and pushes everything to the left
 (define (tilt-west lol)
   (map shift-rocks lol))
 
-
-(map string-join (tilt-west platform))
-
-'(". . . . . # . . . ."
-  ". . . . # . . . . #"
-  ". . . O . # # . . ."
-  ". . . # . . . . . ."
-  "O . O . . . . O # O"
-  "O . # . . O . # . #"
-  "O . . . . # . . . ."
-  "O O . . . . O O . ."
-  "# O O . . # # # . ."
-  "# O O . O # . . . O")
-
-
-'("O . . . . # . . . ."
-  "O O O . # . . . . #"
-  ". . . . . # # . . ."
-  "O O . # O O . . . ."
-  "O O . . . . . . # ."
-  "O . # O . . . # . #"
-  "O . . . . # O O . ."
-  "O . . . . . . . . ."
-  "# . . . . # # # . ."
-  "# O O . . # . . . .")
-
-
 ;; get-load
 (define (north-beam-load tilted-rocks)
   (for/sum ([idx (in-range (length tilted-rocks) 0 -1)]
             [row tilted-rocks])
     (* idx (count (curry string=? "O") row))))
 
-'(". . O . # . O O O O"
-  "# . . . . # . . O O"
-  "O . . # # O . . O O"
-  ". . . O O . # . . O"
-  ". # . . . . . . . ."
-  "# . # . . . . # . ."
-  "O . O . # . . O . ."
-  ". . . . . . . O . ."
-  ". . # # # . . . . #"
-  ". . . . # . . . . #")
-
-
-
+;; part 1
 (north-beam-load (tilt-north platform))
 
-1,000,000,000
+;; part 2
+;; (map string-join
+(define 1bn 1,000,000,000)
 
 
-#|
+;; we know there is a cycle every 78 iterations
+;; and when we do 1bn mod 78 we get 64
+(let ([cycle-num (modulo 1bn 78)])
+  (let loop ([num-iters 78]
+             [shifted-platform platform])
+    (cond [(zero? num-iters) (north-beam-load shifted-platform)]
+          [else
+           (begin
+             (let ([inum (- 78 num-iters)])
+             (when (zero? (modulo inum 10))
+               (displayln (format "iteration: ~a" inum))))
+           (loop
+            (sub1 num-iters)
+            ((compose tilt-east tilt-south tilt-west tilt-north)
+             shifted-platform)))])))
 
-idea
-
-maybe there is a cycle? if so we can only check the modulo of the cycle
-
-let's try it the dumb way first
-
-|#
 
 
-(let loop ([num-iters 1000000000])
-  (cond [(zero? num-iters) (north-beam-load platform)]))
 
-;; almost there, trains arriving
+
+;; not brute force
+;; we have n -> w -> s -> e
+;; how can we reduce this?
+;; maybe cycle finding algorithm and keep track of the iter
+
+(map string-join
+ (let loop ([num-iters 64]
+            [shifted-platform platform]
+            [history '()])
+   (cond [(zero? num-iters)
+          (north-beam-load shifted-platform)]
+        [else
+         (begin
+           (let ([inum (- 1000 num-iters)])
+             (when (zero? (modulo inum 10))
+               (displayln (format "iteration: ~a" inum))))
+           (let ([round ((compose tilt-east tilt-south tilt-west tilt-north)
+                         shifted-platform)])
+             (when (member round history)
+               (begin
+                 (displayln (format "found cycle! ~a ~a" num-iters (north-beam-load shifted-platform)))
+                 (set! history '())))
+             (loop
+              (sub1 num-iters)
+              round
+              (cons round history))))])))
+
+;; 96475
+;; 827 749 671 593 515 437 359 281 203 125 47
+(define test-res '(827 749 671 593 515 437 359 281 203 125 47))
+
+(require (only-in srfi/1 map))
+
+(map (λ (a b) (- a b)) test-res (rest test-res))
