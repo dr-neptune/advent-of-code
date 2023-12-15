@@ -19,3 +19,28 @@
 (apply + (map Holiday-ASCII-String-Helper-algorithm_appendix_1A init-seq))
 
 ;; part 2
+#|
+
+if val- then find the val and remove it
+if val= then find the val and replace it or just place it
+
+|#
+
+(define (char->digit char)
+  (- (char->integer char) (char->integer #\0)))
+
+
+(define (split-instruction instruction)
+  (match (string->list instruction)
+    [(list a b #\= c)
+     (let ([str (list->string (list a b))])
+       (list (Holiday-ASCII-String-Helper-algorithm_appendix_1A str)
+             str
+             (char->digit c)))]
+    [(list a b #\-)
+     (let ([str (list->string (list a b))])
+       (list (Holiday-ASCII-String-Helper-algorithm_appendix_1A str) str))]))
+
+
+(map Holiday-ASCII-String-Helper-algorithm_appendix_1A '("rn" "cm" "qp" "cm" "qp" "pc" "ot"))
+(map split-instruction init-seq)
