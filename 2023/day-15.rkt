@@ -55,6 +55,4 @@
         (λ (k v)
           (for/sum ([idx (in-inclusive-range 1 (length v))]
                     [val v])
-            (* (add1 k)
-               idx
-               (cadr val))))))
+            (* (add1 k) idx (cadr val))))))
