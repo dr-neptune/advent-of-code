@@ -1,9 +1,13 @@
 #lang racket
 (require racket advent-of-code)
 
-(define init-seq (map (curryr string-replace "\n" "") (string-split (fetch-aoc-input (find-session) 2023 15) ",")))
+(define (char->digit char)
+  (- (char->integer char) (char->integer #\0)))
 
-(define init-seq (string-split "rn=1,cm-,qp=3,cm=2,qp-,pc=4,ot=9,ab=5,pc-,pc=6,ot=7" ","))
+(define (val-map fn ht)
+  (for/hash ([(k v) (in-hash ht)]) (values k (fn v))))
+
+(define init-seq (map (curryr string-replace "\n" "") (string-split (fetch-aoc-input (find-session) 2023 15) ",")))
 
 (define (Holiday-ASCII-String-Helper-algorithm_appendix_1A str)
   (let ([current-value 0])
@@ -14,33 +18,43 @@
             (set! current-value (remainder (* 17 (+ current-value (first ascii-values))) 256))
             (loop (rest ascii-values)))))))
 
-
 ;; part 1
 (apply + (map Holiday-ASCII-String-Helper-algorithm_appendix_1A init-seq))
 
 ;; part 2
-#|
-
-if val- then find the val and remove it
-if val= then find the val and replace it or just place it
-
-|#
-
-(define (char->digit char)
-  (- (char->integer char) (char->integer #\0)))
-
-
 (define (split-instruction instruction)
   (match (string->list instruction)
-    [(list a b #\= c)
-     (let ([str (list->string (list a b))])
+    [(list a ..1 #\= c)
+     (let ([str (list->string a)])
        (list (Holiday-ASCII-String-Helper-algorithm_appendix_1A str)
              str
              (char->digit c)))]
-    [(list a b #\-)
-     (let ([str (list->string (list a b))])
+    [(list a ..1 #\-)
+     (let ([str (list->string a)])
        (list (Holiday-ASCII-String-Helper-algorithm_appendix_1A str) str))]))
 
+(define (set-lenses instruction-lens-sets)
+  (let ([hsh (make-hash)])
+    (for ([instruction instruction-lens-sets])
+      (match instruction
+        [(list a b)
+         (match-let ([(list HASH code) instruction])
+           (hash-set! hsh HASH (filter (λ (v) (not (equal? code (car v)))) (hash-ref hsh HASH '()))))]
+        [(list a b c)
+         (match-let ([(list HASH code val) instruction])
+           (let ([current-vals (hash-ref hsh HASH '())])
+             (if ((compose not false? (curry member code)) (map car current-vals))
+                 (hash-set! hsh HASH
+                            (list-set current-vals (index-of (map car current-vals) code) (list code val)))
+                 (hash-set! hsh HASH (cons (list code val) current-vals)))))]))
+    (val-map reverse hsh)))
 
-(map Holiday-ASCII-String-Helper-algorithm_appendix_1A '("rn" "cm" "qp" "cm" "qp" "pc" "ot"))
-(map split-instruction init-seq)
+(apply +
+       (hash-map
+        (set-lenses (map split-instruction init-seq))
+        (λ (k v)
+          (for/sum ([idx (in-inclusive-range 1 (length v))]
+                    [val v])
+            (* (add1 k)
+               idx
+               (cadr val))))))
