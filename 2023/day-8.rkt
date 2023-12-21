@@ -15,7 +15,6 @@
       (string/p ", ")
       [to <- (many/p (char-between/p #\A #\Z))]
       (string/p ")")
-      ;; [boat-ints <- (many/p integer/p #:sep (many/p space/p))]
       (pure (map list->string (list idx from to))))))
 
 (define input (fetch-aoc-input (find-session) 2023 8))
