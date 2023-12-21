@@ -1,5 +1,8 @@
 #lang racket
-(require racket advent-of-code)
+(require racket advent-of-code (only-in srfi/1 map))
+
+(define (transpose lol)
+  (apply map list lol))
 
 (define (prep-input in)
   (map (compose (curry filter (λ (v) (not (zero? (string-length v)))))
@@ -7,126 +10,6 @@
        (string-split in "\n")))
 
 (define platform (prep-input (fetch-aoc-input (find-session) 2023 14)))
-
-(define platform
-  (prep-input
-   "..O....O....O..#O#OOOO...O..O...#.O.#.OO...O.##O#.#..#...OOO.#....O#....#...OO..O.OO..#.OOO.O..O.O.O
-.OO.##....#.#..#O...........##O..#..O..O.....#.O.##.O.O............#......##........#.OO..#OO..#....
-##........O.O.#O...##.#...#.#.O...#..#O...#....#O...OOOO..OO.OOO.O...O.#........OO.O.O....O...O##O..
-...O..O#..O.O..O.O..OO..#.....O..OO....O#..O.##..O..#O.#.OO....####.OOO.OO..O.#..OO.O....O...#.#.O..
-...#.O.OOO..#O...O#...O....O...#.O.OO.O.O...O...#...#.#O...#....#....#..O....#..O..#...#..O.....O...
-.OO...#...#O#....O.O#.O#.O#.OO.OO.O.O#..........O#....O........O.O.....#...O.#....#........#........
-.#.#.#.OOO....#.O.#....#.#..##O.........O.#OO.OO..OO#.#....##.#.##O#.#....O.#.........#...O.#O.O....
-..O.#.#.O.....O....O.#..#..O#.#OO..OO........#O.#OO.O..OO.O.......#...#.#..##...........O...#.O.#.#.
-...#....#...O....##O......O...#...#....O.#...OOO#..#..O....##.OO.......#O.#.....OO....#.###O#O#.....
-O..#O..O..OO.OO.O........O.##O.O...O.O##O..#....#.#..O.OO.#.....O.#......O..O#..#.O.#O.#...#O....O..
-OO...O.......#........O#.#.....#O.O...O.O........O.##O......OO.....#.....O#...O#.#..#...#.#O..#.....
-O.....O..O..O...#..O..#O#.O..O...O....O#..O...#O.....O.OO...O....O..#...O....#O..#....O..O.##....OO.
-.#.#..O........O...#.......O..##.O.###.O..O.....O.##O...OO....O..#..#O....O..O.O..........O...OO.O..
-....O..O..O........#O.#.##...##....#.#.O...#O#.O....#.O#O#O....#.O#......O##..#.O.O....#O#..OO.#..#.
-##....O...O###.O.....O#.OOO.O##.##....O.....O...O..O...O..#...O....##.....O........##...#.O...##O...
-...O....###......#...O.OO........#.#.....OOO........O.#......O.O#....O.O.....#..##..O..#.#O#..O..O#O
-.O..#.##O#...O.OO#...#OO.#..##.##..O.#.#O.O.#...OOOO...#.........O...........#..O.......#.##.O...##.
-.OOO#.......OO....O..#..#O.O.O#.#O..#....O....#.O.O..O#..#...#.O.#O.#.OO.OO..#.#O.#.O#...#O.....#..#
-...#O...O.O..#.O........O#.#....O.######O#...O.#.O.#..O.....#.....#...O..............#...O....##..#.
-.O............O#......#O##O..OO......#....OO#..#..#..#OOO...#..#.....O#OO..O.O..#.O#..OO.##...O#.#..
-.O...OOO.O.#........#..#..O.O.......O...#...#OO#O.....O...O......O...OO.O#.O.O#.OO.#......O.O....#O.
-O.##O.....OO....O..##..O....#......O...O...O....####..#.....O.....O..O.#.O..#OO.#..#..O#O..O...#...O
-..O...#O#...#.#..O...O#.O......O.#..#...#..#O..#...#..O.....O...OO.O#....OO.......#..###.OO..#..OOO.
-.#..##O..O....O...O....O..O###.O.O......O#OO#O#O#O#...#...##.O.......#OOO#.##.#.O.....O.O.OO..#...O.
-.O...#..O...O..O....#....O.....#O...#..O..#..#.......O...#..#....O.O#O....#....#O...OO...#.O.....OO#
-.#.O..O............#...#...O..........O...O##......O.#....#O..O.O#...O##O.O..#....OOO..#...OOO....O.
-O#O#.....O...OO##.....O#...O.....OO#.#...OO.O.O#.O.O.......#..##......O.#O.....#.O..#...#O...#...O..
-..O##..#....O#.......OO#O.#......OO.##.#O.O.O....O.O..#O.#.....#..O......#O#....#O#.....#........#..
-.O.##.#...O....#O........OOO.#O.....#.#....O..O..###....#.#..#.#O#.#.....#..#..#O##..#..OO.##.O....O
-.O..O.O.....O.O...O#.#...##O....O.O.O...#....#O....#.O..OO...O.#..#O#........#OO....#...#.#..O..O...
-...##O.O...O##....#..O...O#...#......#.OO##.....#..#.....O....#......O#.#O..O.#.O.O..O....O..O.O###O
-...#....O.O...O..#.O....#...##O..O..O..#...O..#OO.#..O..#OO..O.........#O....#.#..O#O.O.#.O.....##O.
-.......#.O.O.O..O##.............OO...O#O.O#.O..OO#.......O#...OOO.....#...O.......#.#..O#..O..OO#...
-O...OO#.O..O.....OO......#.O#...#O#O.O......#.#O.....#..O.#.O#..#O.O....O.......O.....OO..O#....#.O.
-..#...O#.O.O.O.#.O......O..#..O....#...#..O.O.#...#.....O..O....OO#OO.O.O.O..........#O..O#.O#..O...
-......#O.....O.....OO.O..O#..#O###..O..#OO.#OO.....O.OOO..#.O...O....#O..#OO.#O...O.O....O#.....O.##
-O.....O.O..#....O....##.....#.......OO#O.#...O..##...#....#.O#O..OO#.##.#.O.O.O.O#...#.OO.#O..OOOO#.
-...OOO.#..#OO.O...#.....O#......#..O.O..OO#.O.O#.#.#........#.O.....#..O..O..#O..#O.#..#....#..#.O..
-..O..O.....#.##.OO#.......O..OOO....OOO...#.O.#O...O...OO....O#OO...O.##....O.....#..O......#......O
-.#..O..OO#O..#.##.O.O...##OOO.#...O......#O...O..#..#..#..O........#...O..#..#.OOO#.O.O......#.##O.#
-#..#...O..#.O.#.....O..#.OO.#.....O.....#....O.OO.#O..#.#.#O..O....O.OO..O.......#O##..#O.#.OO...O..
-O...O....OO..#OOOOO##.......##....#........O..O......O#O.#.......O.#.....OO........###..#........#.O
-O.....O.......#OO.O.OO..O.O##.....O....O##......OO...O#O...O.....O.O....OOO#.O....#O.##...#.#..O##..
-..O...#.....##.#O...#.OO.O#......O...O....OO..O.##O..OO#.O.#.O.O..#..#.O.O..O...O..#.OO.O.O....O....
-O.OO.###.O..OO..##O....#.O......O.....O..OO......O.O.#OO...OO.#.....O#..O..#O.O........O.OO#O.OO....
-O.....OO.....#O..O...O.#.OO#O.O##O...OO#..##O#.O.O#OO....#.#..#...##.#...#..O.O....O..O....#O.#.O...
-...#.......OO.O..O......O.O.#....#..O.#.###.#......#.#O......#.#.O..O...O.#..#...#OO...O#.O....O##.O
-....O.#...O..#.....O.#.OO..#...O.O....O....#..#...#..........O.O..#...O#...O#.#OOO.O.O.....O#O.....O
-.....O...O.O...#.#....#....##.OO..#..O.O.OO...O#.O.....#..#...O...O......#.#....O..O......OO.O.O...#
-.O.#..#.O..O...#.O.....OOO.O.#.OOO..O.........#.OO#....#.O.....#O.....#..#...O......#.#O.O...O.OOO.O
-O#OO...O..#OO.OOO##..O........###..O....O#.O...O....O..#..........#...OO#O.....O.OO.O..#....O.#..#..
-............O.O..O#...O.#......O....#.............O......#.O..O...O.#OO...#.....O....#.O#...#OO..O.#
-.O.#.#O..#O...O.O..O#.O...##.#.#...O#...#..#.#OO#....#O....#......O.#O..O#O#.O....O.......#....#....
-#.##...#.O.......#.....OO....#O#..O#.....O.#....O.#O#..O..##.#....O.......#....#.O#.#..#..O#.#..O.O.
-..O..O#..O.O....O..#....O#.O##O..O..#.#OOO#O.O.##.O##O..........#.O.O#..#O.O.OO.#..OO...###O..#.O.##
-.......O..........##..#.#.......#.O.O..O......O.O.OO.O............OO.O.O#..##.#......##O.O#O..O.....
-....O......#..O..O..##O..O#.O....O..#.O.#...O.#O.O.O.O.#.#..O.....#..O.#..O#............O..#.O...#O#
-..O...O..#O....O.#O..O.#.O.O..O..OO##.....##OO..#..#.O#O....O...#.....O#.O.#.......#.....O#..O..O.#.
-.O..#...O..#.....O.#O#O....OOO..#..#.O..O.O.#......O.#OO#O..#.O#..#....O..#.O.O#......O#..##...OO..#
-##.#...##.O...OOO....##O.O..OO#OO.O#...O.OO........#......OO...#.#..O#.#........O....OOO..O..O..O.#.
-#.OOO....O......O....#.#.OO..#.....O...O.OO..O..OO.....OO........OO....O.O..#.O#.....O......#.#.#O..
-...O........O..O.#O...#......O...O...O.....#.O....O.........#...OO....##...O.#.O.....O...O.......#O.
-..O#.#O.OO#...O.O..O..OOO..........O.....#O....O......#..OO...O..O#O.#....#.O..........#O.OOO...##..
-#..O#...OO#.O....O#......##.#O....O..OO.OO..O....#.......O.....O..O......O#O.....O..O...#....#....O.
-.#....O............O.O.OO...O##O......#....O#.........OO.O#O............O##O.#....#O.O###.#O..#.....
-O#.....O.O..O..#.....#.#....#......#...O.OO.#OO....#..##.O..O#O...OO..#...O.#.#.O..##.#....OO.O.....
-#.....O......O#.#........#....O..#O.#O.OO..O.OO.O..O##.#.#.#OO....O.#....O.O..#.....#.....O.OO...OOO
-..OO.##OO#O.............O.OO...O#.##...#.#O...#O.....#...#.......#OOO.#.O#OO.....#..O#..#...OO....#.
-.#....OO.#.O##...#.O#.....OO#O...OOO..O##....OO.#.#.#......O#...O#OO....#......OOOOO#O...#..#.....O#
-##O.O..O.##......#.OO...#...O..#O........##.O.......O#......#..#O....O....O#O.O..##.........O.......
-..O.#...#OO#O....#O.....O...##.O....#..##O#........O..#..#..#...O..#.OO.#O#...O......#....#.......##
-.O.###......#........##.....#...#...#O.O#O..........#..O.....O.OOO#O.....#...#.OO#O.O##O.OOO........
-.#..O.......O....O...#.........#O##.OOO#O..#.#...O....O#O..O....#..O#..#....#O#......O#O#..#.....#.#
-.###O.O..OO.O..O....O#.##O.O..O..O..#O#.#O#.O....O..O#..O..####.O...#..O..#OO....OO.......#..#.O..#.
-O...O#...#.O....OO..##..O..O#O#.#OOO...OO...#..#....#O..#.#....#O...OO.O...O.#.O..#.#..O.O..O#.O#.#.
-#.O..#..O##O..OOO.O...O.OO#.#...OO.OO.......O..#.O#OO....O.#O...........#...O..O...###O#..##..#.O.#.
-.O.O.#.....O#...OO....#.....#.OOO.#..#O.#O.#O...#..O.....##..O#............O....O#...#.O#.....#OO.#.
-##O.O...OO.O.#.#O..O....#.#.O............#O..O.....O..#..#.#.O..#.......#.O.........O.OO...#..#####.
-.O##..####...#...........#.O..#..O#..OO........O..O...#O.##OO..#..O.O.O..#..##.O.OO#O#...#....#O.O.O
-O.....O.O#....O#..#...O....OOO.OO..#..#......O...OOO.....O...O#..O..........####............#.O...OO
-O#..O...#......#...#....#.#.O.........O...O....##O......#...O#.O.OO....#O.......#.O.O.OO.#O.#O...#OO
-.O.....O...#.#..O#...O#.OO##O...#..#....#.O.O....O......#.O...##..O.##.....O#.O#..OO#.#.........#...
-O....O.#O......O#O..OO#.#..#.OOO...#.#...#..#..OO..#........#.O..O..O##..OO#.#.O#OO.....#.O.##....O.
-.OO............O....OO..#.#...O.#..O.......O.O......#....O..O..O#.......#.....OOO##...#.....O...O.#.
-.#...O..OO.O....O...#.#...#OO#.O...#...##.O.......O.......#.....O..##O..O..OO..O#.OO..O.O...O.#...#.
-..OO#.#O..#OO..O#O#O.O....O..O.......OO##.O..#.#O....O.#.....O..O.O....O##.#....#.#....O..#..#..OOO.
-....#..O#..#...##.....#.#O.O......#....O##............#.....##O...#..O..##.#O..#O...O....O...##OO...
-#O...O......O.O.#.OOO.....O##...#..O..OO...#..O#...O....O.O....#..O#...OOO..#.O..O....#..##.#.O.O...
-##..#O#.O.#O...O#....OO...#..#.O##.O...#.O.#.O.O....O.#...O#.....####....OO.O..#.OO#....O...#..#....
-O#..#...##.#.###.O##..#..##OO...#O#.........O.....O.OO#..OO..O....#.O#..........#...###.#......O..#.
-O..#..##.O.O....OO.O#.##.O..O.#.#..#..O..OO..O...#.O.#....O#.....#OO...O.O#OO.O#.......OO#..#.O...O.
-O..#..O#.#....#.O....O...#.OO.....O.O...O.#.###.#.O..O.O.#.....O.#......O#.....O...O......O.#..#...O
-##O..#.##...#.......#.#..#.O....#.......O...O.##.O..#.O...O..##.O..#..O....O#....O.O#..O.......O.O.O
-#..O...O....OO..O...O.OO....#..#..#.O#....#.#..O##.#..#.#.OOO#.#.O..#..O##......O.....OO....O#.#...O
-#O.....O........##OO#..OO..O..O.#...O#......O..O..OO..OO....##.....#OOO.#OO.......O....O#.O...##..#.
-.O..OO.O.....OOO...##O....##O....#.#.#O...OO.O...#..#......O.O.O..O.O..##....O....O.O.##....OO.#O.O.
-..........O..O#...#...#..#..O..O...O#..O#OOO#......OOO#O..O.O.#O...O#..#O.OO..O##..O##O...O.O#.....#
-#...#O..O.......O.O##.OO.#.#O..O.....O...#..O..O......O...#....#..O..O....##.....#.#...O.........#..
-#....O.....O..O......#..#..........O..OO.#..##.....#..O...##....O.O..#.#O.#....OO.#....#.O...O...#O.
-.......#..#.O..#....O......OOO.#....#O#.O..O..O#O#.##.#.#.#.............#O##OO.#.#O.#....O.O.#......"))
-
-(define platform (prep-input
-"O....#....
-O.OO#....#
-.....##...
-OO.#O....O
-.O.....O#.
-O.#..O.#.#
-..O..#O..O
-.......O..
-#....###..
-#OO..#...."))
-
-
-;; get column-above
-(define (column-above lol x)
-  (map (curryr list-ref x) lol))
 
 ;; get nearest obstacle
 (define (get-obstacle col rock-idx)
@@ -146,26 +29,6 @@ O.#..O.#.#
                          (list-set (list-set updated obs "O") idx ".")
                          (add1 idx))]))]
           [_ (loop updated (add1 idx))]))))
-
-#|
-
-we have shift-rocks
-this takes a row and pushes everything to the left
-
-|#
-
-;; shift east
-;; (reverse (shift-rocks (reverse '("O" "." "." "." "O" "#" "." "." "O" "."))))
-
-
-;; tilt south
-;; (shift-rocks '("O" "." "." "." "O" "#" "." "." "O" "."))
-
-
-
-
-(define (transpose lol)
-  (apply map list lol))
 
 (define (tilt-south lol)
   (transpose (map (compose reverse shift-rocks) (map reverse (transpose lol)))))
@@ -189,61 +52,40 @@ this takes a row and pushes everything to the left
 (north-beam-load (tilt-north platform))
 
 ;; part 2
-;; (map string-join
-(define 1bn 1,000,000,000)
+;; cycle detection
+(define (floyds vec)
+  (let loop ([tort-pos 0]
+             [hare-pos 1])
+    (if (or (> hare-pos (sub1 (vector-length vec)))
+            (> tort-pos (sub1 (vector-length vec))))
+        #f
+        (let ([tort (vector-ref vec tort-pos)]
+              [hare (vector-ref vec hare-pos)])
+          (if (equal? tort hare)
+              #t
+              (loop (add1 tort-pos)
+                    ((compose add1 add1) hare-pos)))))))
 
+;; get pre run out iteration count and cycle length
+(define-values (pre cycle-length)
+  (let ([iters 500])
+    (let loop ([num-iters iters]
+               [shifted-platform platform]
+               [history '()]
+               [cycles '()])
+      (cond [(zero? num-iters) (match-let ([(list* pre cycle-ls) (map inexact->exact (reverse cycles))])
+                                 (values pre (first (remove-duplicates (map (λ (a b) (/ (- b a) 2)) cycle-ls (rest cycle-ls))))))]
+            [else
+             (let ([round ((compose tilt-east tilt-south tilt-west tilt-north) shifted-platform)])
+               (when (floyds (list->vector history))
+                 (set! history '())
+                 (set! cycles (cons (- iters num-iters) cycles)))
+               (loop (sub1 num-iters) round (cons round history) cycles))]))))
 
-;; we know there is a cycle every 78 iterations
-;; and when we do 1bn mod 78 we get 64
-(let ([cycle-num (modulo 1bn 78)])
-  (let loop ([num-iters 78]
-             [shifted-platform platform])
-    (cond [(zero? num-iters) (north-beam-load shifted-platform)]
-          [else
-           (begin
-             (let ([inum (- 78 num-iters)])
-             (when (zero? (modulo inum 10))
-               (displayln (format "iteration: ~a" inum))))
-           (loop
-            (sub1 num-iters)
-            ((compose tilt-east tilt-south tilt-west tilt-north)
-             shifted-platform)))])))
-
-
-
-
-
-;; not brute force
-;; we have n -> w -> s -> e
-;; how can we reduce this?
-;; maybe cycle finding algorithm and keep track of the iter
-
-(map string-join
- (let loop ([num-iters 64]
-            [shifted-platform platform]
-            [history '()])
-   (cond [(zero? num-iters)
-          (north-beam-load shifted-platform)]
-        [else
-         (begin
-           (let ([inum (- 1000 num-iters)])
-             (when (zero? (modulo inum 10))
-               (displayln (format "iteration: ~a" inum))))
-           (let ([round ((compose tilt-east tilt-south tilt-west tilt-north)
-                         shifted-platform)])
-             (when (member round history)
-               (begin
-                 (displayln (format "found cycle! ~a ~a" num-iters (north-beam-load shifted-platform)))
-                 (set! history '())))
-             (loop
-              (sub1 num-iters)
-              round
-              (cons round history))))])))
-
-;; 96475
-;; 827 749 671 593 515 437 359 281 203 125 47
-(define test-res '(827 749 671 593 515 437 359 281 203 125 47))
-
-(require (only-in srfi/1 map))
-
-(map (λ (a b) (- a b)) test-res (rest test-res))
+;; calculate final value
+(let ([cycle-count-offset (+ pre (modulo (- 1e9 pre) cycle-length))])
+  (let loop ([num-iters cycle-count-offset] [shifted-platform platform])
+    (match num-iters
+      [0 (north-beam-load shifted-platform)]
+      [_ (let ([round ((compose tilt-east tilt-south tilt-west tilt-north) shifted-platform)])
+           (loop (sub1 num-iters) round))])))
