@@ -13,6 +13,12 @@ KK677 28
 KTJJT 220
 QQQJA 483" "\n"))
 
+(define (split-where ls val)
+  (let ([split-point (index-of ls val)])
+    (if split-point
+        (list (take ls split-point)
+              (drop ls split-point))
+        (list ls '()))))
 
 (define hands
   (for/hash ([hand-bid (map (λ (card) (match-let ([(list hand score) (string-split card)])
@@ -20,21 +26,18 @@ QQQJA 483" "\n"))
                             camel-cards)])
     (values (first hand-bid) (second hand-bid))))
 
-(define card-order-rank<=>
-  (let ([card-cmp
-         (comparator-of-constants #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9 #\T #\J #\Q #\K #\A)])
-    (make-comparator
-     (λ (hand1 hand2)
-       (let ([cmp (λ (a b) (compare card-cmp a b))])
-         (for/first ([c1  hand1] [c2 hand2]
-                                 #:when (not (equal? equivalent (cmp c1 c2))))
-           (match (cmp c1 c2)
-             [lesser lesser]
-             [greater greater])))))))
+(define (card-comp-gen card-cmp)
+  (make-comparator
+   (λ (hand1 hand2)
+     (let ([cmp (λ (a b) (compare card-cmp a b))])
+       (for/first ([c1  hand1] [c2 hand2]
+                               #:when (not (equal? equivalent (cmp c1 c2))))
+         (match (cmp c1 c2)
+           [lesser lesser]
+           [greater greater]))))))
 
-
-;; (compare card-order-rank<=> '(#\T #\5 #\5 #\J #\5) '(#\Q #\Q #\Q #\J #\A))
-
+(define card-order (comparator-of-constants #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9 #\T #\J #\Q #\K #\A))
+(define card-order-rank<=> (card-comp-gen card-order))
 
 (define hand-rank<=>
   (make-comparator
@@ -53,8 +56,6 @@ QQQJA 483" "\n"))
              [(= (hand-mapping a) (hand-mapping b)) equivalent]
              [(> (hand-mapping a) (hand-mapping b)) greater])))))
 
-
-;; chained sort is working!
 (define sorted-hands
   (transduce (hash-keys hands)
              (sorting (comparator-chain hand-rank<=> (comparator-reverse card-order-rank<=>)))
@@ -64,11 +65,25 @@ QQQJA 483" "\n"))
               sorted-hands (stream->list (in-inclusive-range (length sorted-hands) 1 -1))))
 
 ;; part 2
+(define card-order (comparator-of-constants #\J #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9 #\T #\Q #\K #\A))
+(define card-order-rank<=> (card-comp-gen card-order))
+
+(define (joker-identity-group-by ls)
+  (let ([non-jokers (transduce
+                     (remove* (list #\J) ls)
+                     (sorting card-order)
+                     #:into into-list)]
+        [joker-count (length (indexes-of ls #\J))]
+        [gb (curry group-by identity)])
+    (cond [(zero? joker-count) (gb non-jokers)]
+          [(empty? non-jokers) (list (make-list joker-count #\J) '())]
+          [else (list-update (gb non-jokers) 0 (compose flatten (curry cons (make-list joker-count #\J))))])))
+
 (define hand-rank<=>
   (make-comparator
    (λ (a b)
      (let ([hand-mapping
-            (λ (hand) (match (sort (map length (group-by identity hand)) <)
+            (λ (hand) (match (sort (map length (joker-identity-group-by hand)) <)
                         ['(5) 1] ;; 5 of a kind
                         ['(1 4) 2] ;; 4 of a kind
                         ['(2 3) 3] ;; full house
@@ -81,11 +96,11 @@ QQQJA 483" "\n"))
              [(= (hand-mapping a) (hand-mapping b)) equivalent]
              [(> (hand-mapping a) (hand-mapping b)) greater])))))
 
-(compare hand-rank<=> '(#\T #\5 #\5 #\J #\5) '(#\Q #\Q #\Q #\T #\A))
+(define sorted-hands
+  (transduce (hash-keys hands)
+             (sorting (comparator-chain hand-rank<=> (comparator-reverse card-order-rank<=>)))
+             #:into into-list))
 
-(group-by (λ (v) identity)
-          '(#\T #\5 #\5 #\J #\5))
-
-;; idea
-;; replace J with max value
-(let ([max-val]))
+;; not working. example works, input does not
+(apply + (map (λ (a b) (* (hash-ref hands a) b))
+              sorted-hands (stream->list (in-inclusive-range (length sorted-hands) 1 -1))))
