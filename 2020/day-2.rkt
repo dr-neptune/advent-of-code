@@ -5,10 +5,12 @@
                 (string-split "\n")
                 ((curry map (curryr string-split ": ")))))
 
-(define pws '(("1-3 a" "abcde")
-              ("1-3 b" "cdefg")
-              ("2-9 c" "ccccccccc")))
+(define (try func)
+  (λ (x)
+    (let ([result (func x)])
+      (if result result x))))
 
+;; part 1
 (define (valid-password? rule pw)
   (let* ([rule-chars (string->list rule)]
          [pw-chars (string->list pw)]
@@ -20,11 +22,23 @@
     (and (<= min-count num-letters-in-pw)
          (>= max-count num-letters-in-pw))))
 
-
-;; part 1
 (for/sum ([pw pws]
-           #:when (match-let ([(list rule pw) pw])
-                    (valid-password? rule pw)))
+          #:when (match-let ([(list rule pw) pw])
+                   (valid-password? rule pw)))
   1)
 
 ;; part 2
+(define (valid-password? rule pw)
+  (match-let* ([(list _ min-index max-index) (map (try string->number)
+                                                  (regexp-match #px"^([0-9]+)-([0-9]+)" rule))]
+               [(list _ ... rule-char) (string->list rule)])
+    (let ([check-point
+           (λ (rule-idx)
+             (equal? rule-char (list-ref (string->list pw) (sub1 rule-idx))))])
+      (xor (check-point min-index) (check-point max-index)))))
+
+
+(for/sum ([pw pws]
+          #:when (match-let ([(list rule pw) pw])
+                   (valid-password? rule pw)))
+  1)
