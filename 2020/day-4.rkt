@@ -3,75 +3,61 @@
 
 (define passports (~> (fetch-aoc-input (find-session) 2020 4) (string-split "\n\n")))
 
-(define passports
-  (~> "ecl:gry pid:860033327 eyr:2020 hcl:#fffffd
-byr:1937 iyr:2017 cid:147 hgt:183cm
+;; part 1
+(define structured-passports
+  (for/list ([passport passports])
+    (for/hash ([split-passport (string-split passport)])
+      (apply values (string-split split-passport ":")))))
 
-iyr:2013 ecl:amb cid:350 eyr:2023 pid:028048884
-hcl:#cfa07d byr:1929
+(define (check-all-fields-exist ht)
+  (define passport-fields
+    (set "byr" "iyr" "eyr" "hgt" "hcl" "ecl" "pid" "cid"))
 
-hcl:#ae17e1 iyr:2013
-eyr:2024
-ecl:brn pid:760753108 byr:1931
-hgt:179cm
+  (set-empty?
+   (apply set-symmetric-difference
+          (map (curryr set-remove "cid")
+               (list passport-fields (apply set (hash-keys ht)))))))
 
-hcl:#cfa07d eyr:2025 pid:166559648
-iyr:2011 ecl:brn hgt:59in"
-      (string-split "\n\n")))
+(define (validate-fields ht)
+  (define (validate-number num low high)
+    (let ([num (string->number num)])
+      (and (number? num) (<= low num high))))
 
+  (define (validate-regex value pattern)
+    (regexp-match? pattern value))
 
-;; idea
-;; use regex?
-;; find each field, and add them to a hashmap
-;; if a value is not found, label it as #f
-;; then make a function valid? which gives rules as to validity
+  (define (validate name value)
+    (match name
+      ["byr" (validate-number value 1920 2002)]
+      ["iyr" (validate-number value 2010 2020)]
+      ["eyr" (validate-number value 2020 2030)]
+      ["hgt" (cond
+               [(regexp-match? #px"^([0-9]+)cm$" value)
+                (validate-number (second (regexp-match #px"^([0-9]+)cm$" value)) 150 193)]
+               [(regexp-match? #px"^([0-9]+)in$" value)
+                (validate-number (second (regexp-match #px"^([0-9]+)in$" value)) 59 76)]
+               [else #f])]
+      ["hcl" (validate-regex value #px"^#[0-9a-f]{6}$")]
+      ["ecl" (member value '("amb" "blu" "brn" "gry" "grn" "hzl" "oth"))]
+      ["pid" (validate-regex value #px"^[0-9]{9}$")]
+      ;; "cid" is ignored, so always valid
+      ["cid" #t]
+      [_ #f]))
 
-#|
+  (andmap
+   (lambda (key)
+     (validate key (hash-ref ht key "")))
+   '("byr" "iyr" "eyr" "hgt" "hcl" "ecl" "pid")))
 
-can you write me a racket function that takes as input a string and a
-list of strings and for each string in the list of strings searches
-the string for a pattern that is marked str: value and places it
+(define (valid? ht validators)
+  (andmap (λ (fn) (fn ht)) validators))
 
-Can you write me a racket function that takes in a string
+;; part 1
+(for/sum ([passport structured-passports]
+          #:when (valid? passport (list check-all-fields-exist)))
+  1)
 
-|#
-
-;; read in a list of regexps
-;; if not found, return key: #f
-;; if found, return key: value
-
-(define passport-fields
-  '("(byr):([0-9]+)"
-    "(iyr):([0-9]+)"
-    "(eyr):([0-9]+)"
-    "(hgt):([0-9]+)"
-    "(hcl):(#[a-z]+)"
-    "(ecl):([a-z]+)"
-    "(pid):([0-9]+)"
-    "(cid):([0-9]+)"))
-
-(define (regexp-match/mult regexps str)
-  (map (λ (re)
-         (let ([rem (regexp-match re str)])
-           (if rem (rest rem) (list re #f))))
-       regexps))
-
-(for/list ([passport passports])
-  (for/hash ([matches (regexp-match/mult
-                       passport-fields
-                       passport)])
-    (apply values matches)))
-
-;; interesting cases:
-;; first inter should be good
-;; second inter should be invalid
-;; third inter should pass because only cid is false
-
-(first inter)
-
-(filter (λ (vl) (not (string-contains? vl "cid"))) (hash-keys (hash-filter-values (second inter) false?)))
-
-(define (valid? hsh)
-  (zero?
-   (length
-    (filter (λ (vl) (not (string-contains? vl "cid"))) (hash-keys (hash-filter-values hsh false?))))))
+;; part 2
+(for/sum ([passport structured-passports]
+          #:when (valid? passport (list check-all-fields-exist validate-fields)))
+  1)
