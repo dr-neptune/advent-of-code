@@ -1,5 +1,5 @@
 #lang racket
-(require racket threading advent-of-code racket/hash)
+(require racket threading advent-of-code)
 
 (define passports (~> (fetch-aoc-input (find-session) 2020 4) (string-split "\n\n")))
 

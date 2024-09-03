@@ -29,6 +29,6 @@
 
 (let ([skip-iter 3])
   (for/list ([idx (in-naturals)]
-             [ls-ele '(1 2 3 4 5 6)])
-    (when (zero? (remainder idx skip-iter))
-      ls-ele)))
+             [ls-ele '(1 2 3 4 5 6)]
+             #:when (zero? (remainder idx skip-iter)))
+    ls-ele))
