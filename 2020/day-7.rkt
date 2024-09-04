@@ -16,34 +16,6 @@ faded blue bags contain no other bags.
 dotted black bags contain no other bags."
       (string-split "\n")))
 
-#|
-
-idea
-
-for each bag rule, we identify which bags the sub bags can hold until we hit no other bags
-we make dags for each bag type
-
-so for input, we have
-
-light red -> (bright white -> (1 shiny gold -> (+ (1 dark olive -> (+ (3 faded blue bags -> NULL) (4 dotted black bags -> NULL))) (2 vibrant plum))))
-
-maybe we can take advantage of lisp here
-
-line input ->
-"light red bags contain 1 bright white bag, 2 muted yellow bags."
-A = light red B = bright white C = muted yellow
-D = shiny gold
-E = dark olive
-(A contains (list B C))
-(B contains (list D))
-->
-(A contains (list (B contains (list (D contains (list E )))) C))
-then backfill B C until B / C is null
-
-(list color number children)
-
-|#
-
 (define (parse-bag-rule rule)
   (define parts (regexp-match #px"^([^ ]+ [^ ]+) bags contain (.*)\\.$" rule))
   (let* ([color (second parts)]
@@ -59,7 +31,6 @@ then backfill B C until B / C is null
     (match-let ([(list color children) (parse-bag-rule rule)])
       (values color children))))
 
-
 ;; now we have a hash that looks like:
 '#hash(("bright white" . ((1 "shiny gold")))
        ("dark olive" . ((3 "faded blue") (4 "dotted black")))
@@ -72,9 +43,102 @@ then backfill B C until B / C is null
        ("vibrant plum" . ((5 "faded blue") (6 "dotted black"))))
 
 
-;; idea to get contained-by hash
-;; for each key
-;; get all keys for which the key is a value
+;; part 2
+;; idea
+
+
+(let rc ([bags (hash-ref bag-hash "shiny gold")])
+  (displayln (format "bags: ~a" bags))
+  (match bags
+    ['() (list 1)]
+    [_
+     (map (λ (bag)
+            (+ (first bag)
+               (* (first bag)
+                  (apply + (rc (hash-ref bag-hash (second bag)))))))
+          bags)]))
+
+
+'((1 (3 . 1) (4 . 1)) (2 (5 . 1) (6 . 1)))
+
+
+
+(let rc ([bags (hash-ref bag-hash "shiny gold")])
+  (displayln (format "bags: ~a" bags))
+  (match bags
+    ['() (list 1)]
+    ['(a b) (apply + bags)]
+    [_
+     (map
+      (λ (bag)
+        (displayln (format "interior bag: ~a" bag))
+        (* (first bag)
+           (rc (hash-ref bag-hash (second bag)))))
+      bags)]))
+
+ (hash-ref bag-hash "shiny gold")
+
+
+(let rc ([bags (hash-ref bag-hash "dark olive")])
+  (displayln (format "bags: ~a" bags))
+  (match bags
+    ['() 1]
+    [_
+     (let rec ([bag bags])
+       (cond [(empty? bag) 0]
+             [else
+              (map (λ (val)
+                     (+ (first val) (rec (hash-ref bag-hash (second val)))))
+                   bag)
+              ]))]))
+
+
+(let rc ([bags (hash-ref bag-hash "shiny gold")])
+  (displayln (format "bags: ~a" bags))
+  (match bags
+    ['() 1]
+    [_
+     (let rec ([bag bags])
+       (cond [(empty? bag) 0]
+             [else
+              (map (λ (val)
+                     (+ (first val) (rec (hash-ref bag-hash (second val)))))
+                   bag)
+              ]))]))
+
+(define (check-leaf bag)
+  (displayln (format "bag: ~a" bag))
+  (if (empty? (hash-ref bag-hash (second bag)))
+      (first bag)
+      (map (λ (v)
+             (displayln v)
+             (* (first v)
+                (check-leaf (hash-ref bag-hash (second v)))))
+           bag)))
+
+(check-leaf '(4 "dark olive"))
+
+#|
+
+1 dark olive
+- 3 faded blue
+- 4 dotted black
+
+(+ 1 (* 3 1) (* 4 1))
+
+1 * (7) + 2 * (11) + 1 + 2
+
+2 vibrant plum
+- 5 faded blue
+- 6 dotted black
+
+what's a dumber way to do this?
+if hash-ref color is '() return just the above number?
+
+|#
+
+;; contained hash flips the direction
+;; values are all the bags that contain the key
 (define contained-hash
   (for/hash ([hk (hash-keys bag-hash)])
     (values hk (for/fold ([contained '()]
@@ -84,94 +148,31 @@ then backfill B C until B / C is null
                                       ((compose not empty?) hv)))
                  (cons in-k contained)))))
 
-;; workinonit here
+;; contained-hash looks like
+;; '#hash(("bright white" . ("light red" "dark orange"))
+;;        ("dark olive" . ("shiny gold"))
+;;        ("dark orange" . ())
+;;        ("dotted black" . ("vibrant plum" "dark olive"))
+;;        ("faded blue" . ("vibrant plum" "muted yellow" "dark olive"))
+;;        ("light red" . ())
+;;        ("muted yellow" . ("light red" "dark orange"))
+;;        ("shiny gold" . ("muted yellow" "bright white"))
+;;        ("vibrant plum" . ("shiny gold")))
 
-(for/fold ([contained '()])
-          ([(hk hv) (in-hash bag-hash)]
-           #:when (and ((compose not empty?) hv)
-                       ((compose not false?) (member "bright white" (flatten hv)))))
-  (cons hk contained))
+;; part 1
+;; now we need to recursively find all the bags "above" shiny gold
+(~>
+ (let rc ([bag (hash-ref contained-hash "vibrant plum")])
+   (match bag
+     ['() '()]
+     [_
+      (append
+       (map (compose rc (curry hash-ref contained-hash)) bag) bag)]))
+ flatten
+ remove-duplicates
+ length)
 
-
-'#hash(("bright white" . ("dark orange" "light red"))
-       ("dark olive" . ("shiny gold"))
-       ("dotted black" . ("vibrant plum" "dark olive"))
-       ("faded blue" . ("vibrant plum" "dark olive" "muted yellow"))
-       ("muted yellow" . ("dark orange" "light red"))
-       ("shiny gold" . ("muted yellow" "bright white"))
-       ("vibrant plum" . ("shiny gold")))
-
-
-
-#|
-
-for each set of values, do the following:
-
-if you find shiny gold, stop
-if you find (), stop
-
-otherwise add the number and replace the color with the value in bag-hash
-
-|#
-
-(let ([bag-ref (hash-ref bag-hash "vibrant plum")])
-  (map (compose (curry hash-ref bag-hash)
-                (λ (val)
-                  (match val
-                    ['() '()]
-                    ["shiny gold" "shiny gold"]
-                    [_ val]))
-                second) bag-ref))
-
-
-
-(let check-bag ([inner-bags (hash-values bag-hash)])
-  (displayln (format "inner bags: ~a" inner-bags))
-  (for/list ([inner-bag inner-bags])
-    (let ([bag-ref inner-bag])
-      (map (compose (curry hash-ref bag-hash)
-                    (λ (val)
-                      (displayln (format "val: ~a" val))
-                      (match val
-                        ['() '()]
-                        ["shiny gold" "shiny gold"]
-                        [_ (map check-bag (hash-ref bag-hash val))]))
-                    second) bag-ref))))
-
-
-(define inter (filter
- (λ (v)
-   (match v
-     ['() #f]
-     [(list "shiny gold" _ ...) #f]
-     [_ #t]))
- (let check-bag ([inner-bags (hash-values bag-hash)])
-   (displayln (format "inner-bags: ~a" inner-bags))
-   (for/list ([inner-bag inner-bags])
-     (displayln (format "inner bag: ~a" inner-bag))
-     (map (compose
-           (λ (val)
-             (displayln (format "val: ~a" val))
-             (match val
-               ['() '()]
-               ["shiny gold" "shiny gold"]
-               [_ (hash-ref bag-hash val)]))
-           second)
-          inner-bag)))))
-
-(define (flatten/deep ls)
-  (cond [(empty? ls) '()]
-        [(list? (first ls))
-         (append (flatten/deep (first ls))
-                 (flatten/deep (rest ls)))]
-        [else (cons (first ls) (flatten/deep (rest ls)))]))
-
-(count (curry equal? "shiny gold") (flatten/deep inter))
-
-
-
-
-
+;; part 2
 
 
 ;; someone else's solution
