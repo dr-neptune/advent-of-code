@@ -1,68 +1,55 @@
 #lang racket
 (require racket threading advent-of-code)
 
-(define boot (~> (fetch-aoc-input (find-session) 2020 8) (string-split "\n")))
-
-(define boot
-  (~> "nop +0
-acc +1
-jmp +4
-acc +3
-jmp -3
-acc -99
-acc +1
-jmp -4
-acc +6"
-      (string-split "\n")))
-
 (define (parse-op op)
   (match-let ([(list operation num) (string-split op)])
     (list operation (string->number num))))
 
-(define (get-next line-number)
-  (list (add1 line-number)
-        (list-ref boot (add1 line-number))))
+(define boot (~> (fetch-aoc-input (find-session) 2020 8)
+                 (string-split "\n")
+                 (map parse-op _)))
 
-(define gen
-  (generator ()
-             (let ([acc 0])
-               (let rec ([line-number 0]
-                         [op (first boot)])
-                 (define get-next (λ ()
-                                    (let ([new-loc (add1 line-number)])
-                                      (begin
-                                        (yield (list acc line-number))
-                                        (rec new-loc (list-ref boot new-loc))))))
-                 (define goto (λ (loc)
-                                (let ([new-loc (+ loc line-number)])
-                                  (begin
-                                    (yield (list acc line-number))
-                                    (rec new-loc (list-ref boot new-loc))))))
-                 (match-let ([(list operation amt) (parse-op op)])
-                   ;; (displayln (format "~a\t~a\t~a" acc line-number op))
-                   (match operation
-                     ["acc" (begin
-                              (set! acc (+ acc amt))
-                              (get-next))]
-                     ["nop" (get-next)]
-                     ["jmp" (goto amt)]))))))
+;; part 1
+(let loop ([seen '()] [acc 0] [idx 0])
+  (match-let ([(list op amt) (list-ref boot idx)])
+    (if (member idx seen)
+        acc
+        (match op
+          ["acc" (loop (cons idx seen) (+ amt acc) (add1 idx))]
+          ["jmp" (loop (cons idx seen) acc (+ amt idx))]
+          [_ (loop (cons idx seen) acc (add1 idx))]))))
 
-;; idea
-;; turn the above into a generator that generates the next acc value?
-(for/list ([acc (in-producer gen (void))]
-           [idx (in-range 30)])
-  acc)
+;; part 2
+#|
 
-;; idea
-;; yield both acc and line number
-;; check for a cycle in the line number
-;; Test: run for 30 iterations or until a cycle is detected
-;; this still needs a proper cycle detection
-(define final-result (let ([visited-lines '()])
-  (for/list ([result (in-producer gen (void))]
-             [idx (in-range 30)]
-             #:break (member (second result) visited-lines))
-    (let ([acc (first result)]
-          [line-number (second result)])
-      (set! visited-lines (cons line-number visited-lines))
-      result))))
+iterate through boot instructions
+If we find a nop/jmp, swap it, then check for cycle
+if no cycle is found, hurrah! return the acc
+
+|#
+
+;; update part 1 to return #f if a cycle is found, acc if not
+(define (try-boot-set boot)
+  (let loop ([seen '()] [acc 0] [idx 0])
+    (match idx
+      [(== (length boot)) acc]
+      [_
+       (match-let ([(list op amt) (list-ref boot idx)])
+         (if (member idx seen)
+             #f
+             (match op
+               ["acc" (loop (cons idx seen) (+ amt acc) (add1 idx))]
+               ["jmp" (loop (cons idx seen) acc (+ amt idx))]
+               [_ (loop (cons idx seen) acc (add1 idx))])))])))
+
+
+;; iterate through
+;; if we find a nop or a jmp, swap and check if it has a cycle
+(let ([swap-instr (λ (op idx)
+                    (let ([new-op (match op ["nop" "jmp"] ["jmp" "nop"])])
+                      (list-update boot idx (λ (p) (list new-op (second p))))))])
+  (for/or ([instr (in-list boot)]
+           [idx (in-naturals)]
+           #:do [(define op (first instr))]
+           #:when (member op (list "nop" "jmp")))
+    (try-boot-set (swap-instr op idx))))
