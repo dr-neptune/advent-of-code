@@ -6,9 +6,7 @@
 
 (define bus
   (~>>
-"939
-7,13,x,x,59,x,31,19"
-   ;; (fetch-aoc-input (find-session) 2020 13)
+   (fetch-aoc-input (find-session) 2020 13)
    (string-split _ "\n")
    ((λ (p)
      (list

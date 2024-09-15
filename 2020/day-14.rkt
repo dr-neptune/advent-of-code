@@ -1,13 +1,8 @@
 #lang racket
-
 (require racket threading advent-of-code)
 
 (define init-pr
   (~>>
-;;    "mask = XXXXXXXXXXXXXXXXXXXXXXXXXXXXX1XXXX0X
-;; mem[8] = 11
-;; mem[7] = 101
-;; mem[8] = 0"
    (fetch-aoc-input (find-session) 2020 14)
    (string-split _ "mask = ")
    (map (compose
@@ -20,15 +15,9 @@
          (curryr string-split "\n")))))
 
 (define mask-len 36)
+(define memory-block (make-hash))
 
-;; make a memory block as big as is needed
-(define memory-block (make-vector (apply max (map (λ (inst-set)
-                                                    (apply max (map second (cadr inst-set))))
-                                                  init-pr))))
-
-(vector-length memory-block)  ;; 101 / 918_112_464
-
-(define (make-bit-str-ls num)
+(define (make-bit-vec num)
   (let ([num-str (number->string num 2)])
     ((compose list->vector string->list)
      (string-append (make-string (- mask-len (string-length num-str)) #\0) num-str))))
@@ -39,26 +28,46 @@
          [mask-indices (indexes-where mask (curry (compose not equal?) #\X))])
     (for ([mem-setter (second instr-block)])
       (match-let* ([(list mem-loc mem-val) mem-setter]
-                   [num-bit (make-bit-str-ls mem-val)])
+                   [num-bit (make-bit-vec mem-val)])
         (for ([idx mask-indices])
           (vector-set! num-bit idx (list-ref mask idx)))
-        (vector-set! memory-block mem-loc ((compose (curryr string->number 2) list->string vector->list) num-bit))))))
+        (hash-set! memory-block mem-loc ((compose (curryr string->number 2) list->string vector->list) num-bit))))))
 
-(apply + (vector->list memory-block))
-
+(apply + (hash-values memory-block))
 
 ;; part 2
-#|
+(define (apply-mask num-bit mask)
+  (for/vector #:length 36 ([mele mask] [ele num-bit])
+    (match mele
+      [#\0 ele]
+      [#\1 #\1]
+      [#\X #\X])))
 
-for each mem-loc, apply the mask. When an x is written, after the mask, we need to take all combinations at those locations
+(define (get-binary-reps n)
+  (for/list ([val (in-inclusive-range 0 (sub1 (expt 2 n)))])
+    (let* ([bin-rep (number->string val 2)]
+           [brsl (string-length bin-rep)])
+      (if (> n brsl)
+          (string->list (string-append (make-string (- n brsl) #\0) bin-rep))
+          (string->list bin-rep)))))
 
-so we need a function result->combinations that returns a list of memory addresses to apply the values.
-the values given aren't masked, so mem[8] = 11 means that each of the different memory areas spawned all get 11
+(define (get-floating-addresses res)
+  (let* ([floating-idxs (indexes-where (vector->list res) (curry equal? #\X))]
+         [binary-reps (get-binary-reps (length floating-idxs))]
+         [res/copy (vector-copy res)])
+    (for/list ([bin binary-reps])
+      (for ([bin-val bin]
+            [idx floating-idxs])
+        (vector-set! res/copy idx bin-val))
+      (string->number (list->string (vector->list res/copy)) 2))))
 
-this makes me think that we should avoid simulation altogether.
-We should make the mask on memory addresses, calculate the new addresses and multiply it by the value.
-Unfortunately, with this approach we can't guarantee that there isn't an overlap between multiple addresses
-hitting the same slot, we need to either do the simulation or keep track of which values were hit. Likely easier
-to just do the simulation
+(for ([instr-block init-pr])
+  (let ([mask (string->list (car instr-block))])
+    (for ([mem-setter (second instr-block)])
+      (match-let* ([(list mem-loc mem-val) mem-setter])
+        (define num-bit (make-bit-vec mem-loc))
+        (define result (apply-mask num-bit mask))
+        (define new-mem-locs (get-floating-addresses result))
+        (for-each (λ (pos) (hash-set! memory-block pos mem-val)) new-mem-locs)))))
 
-|#
+(apply + (hash-values memory-block))
