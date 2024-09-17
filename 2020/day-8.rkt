@@ -20,13 +20,6 @@
           [_ (loop (cons idx seen) acc (add1 idx))]))))
 
 ;; part 2
-#|
-
-iterate through boot instructions
-If we find a nop/jmp, swap it, then check for cycle
-if no cycle is found, hurrah! return the acc
-
-|#
 
 ;; update part 1 to return #f if a cycle is found, acc if not
 (define (try-boot-set boot)
