@@ -1,8 +1,6 @@
 #lang racket
 (require racket threading advent-of-code)
 
-(pretty-print-columns 25)
-
 (define cubes
   (~>>
 ;; ".#.
@@ -12,27 +10,27 @@
    (string-split _ "\n")
    (map string->list)))
 
-(define neighbor-offsets
-  (for*/list ([dx (in-list '(-1 0 1))]
-              [dy (in-list '(-1 0 1))]
-              [dz (in-list '(-1 0 1))]
-              #:when (not (and (= dx 0) (= dy 0) (= dz 0))))
-    (list dx dy dz)))
+(define DIMENSION 5)
 
-(define points (make-hash))
+(define (make-neighbor-offsets dim)
+  (~>> (make-list dim '(-1 0 1))
+       (apply cartesian-product)
+       (filter (λ~> (equal? (make-list dim 0)) not))))
 
-(for* ([y (length cubes)]
-       [x (in-range (length (first cubes)))]
-       #:do [(define val (list-ref (list-ref cubes y) x))]
-       #:when (char=? val #\#))
-  (hash-set! points (list x y 0) val))
+(define neighbor-offsets (make-neighbor-offsets DIMENSION))
+
+(define points
+  (for*/hash ([y (length cubes)]
+              [x (in-range (length (first cubes)))]
+              #:do [(define val (list-ref (list-ref cubes y) x))]
+              #:when (char=? val #\#))
+    (values (append (list x y) (make-list (- DIMENSION 2) 0)) val)))
 
 (define (count-active-neighbors active-cubes)
   (let ([neighbor-counts (make-hash)])
     (for* ([cube (in-hash-keys active-cubes)]
            [offset neighbor-offsets])
       (let ([neighbor (map + cube offset)])
-        ;; possible bug here. Should we init with 0 or 1?
         (hash-update! neighbor-counts neighbor add1 0)))
     neighbor-counts))
 
@@ -58,4 +56,12 @@
 ;; part 1
 (hash-count (simulate-cycles points 6))
 
-;; part 2
+#|
+
+part 2 is the same as above, except that we extend the dimensions to
+include the 4th dimension, w. All you need to do is set DIMENSION to 4
+and rerun the above.
+
+The dim=5 case takes about an order of magnitude longer
+
+|#
