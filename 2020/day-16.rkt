@@ -8,15 +8,12 @@
   (map string->number (string-split ticket ",")))
 
 (define (parse-field field-str)
-  "Parses a field string into a `field` struct, handling potential errors."
   (define split-result (string-split field-str ": "))
-  (if (= (length split-result) 2)
-      (let ([name (first split-result)]
-            [ranges-part (second split-result)])
-        (define range-strings (string-split ranges-part " or "))
-        (define ranges (map parse-range range-strings))
-        (field name ranges))
-      (error 'parse-field "Expected two parts (name and ranges) in the field string, got: ~a" field-str)))
+  (let ([name (first split-result)]
+        [ranges-part (second split-result)])
+    (define range-strings (string-split ranges-part " or "))
+    (define ranges (map parse-range range-strings))
+    (field name ranges)))
 
 (define (parse-range range-str)
   "Parses a range string like '1-3' into a Range object."
@@ -25,43 +22,16 @@
   (define end (second split-result))
   (closed-range start end))
 
-
 (define ticket-info
-  (~>>
-   ;; "class: 1-3 or 5-7
-   ;; row: 6-11 or 33-44
-   ;; seat: 13-40 or 45-50
-
-   ;; your ticket:
-   ;; 7,1,14
-
-   ;; nearby tickets:
-   ;; 7,3,47
-   ;; 40,4,50
-   ;; 55,2,20
-   ;; 38,6,12"
-   ;; "class: 0-1 or 4-19
-   ;; row: 0-5 or 8-19
-   ;; seat: 0-13 or 16-19
-
-   ;; your ticket:
-   ;; 11,12,13
-
-   ;; nearby tickets:
-   ;; 3,9,18
-   ;; 15,1,5
-   ;; 5,14,9
-   ;; "
-   (fetch-aoc-input (find-session) 2020 16)
-   (string-split _ "\n\n")
-   (map (λ~> (string-split "\n")))
-   ((λ (tri)
-      (let ([parse-tickets (curry map parse-ticket)]
-            [parse-fields (curry map parse-field)])
-        (list (parse-fields (first tri))
-              (parse-tickets (drop (second tri) 1))
-              (parse-tickets (drop (third tri) 1))))))))
-
+  (~>> (fetch-aoc-input (find-session) 2020 16)
+       (string-split _ "\n\n")
+       (map (λ~> (string-split "\n")))
+       ((λ (tri)
+          (let ([parse-tickets (curry map parse-ticket)]
+                [parse-fields (curry map parse-field)])
+            (list (parse-fields (first tri))
+                  (parse-tickets (drop (second tri) 1))
+                  (parse-tickets (drop (third tri) 1))))))))
 
 ;; part 1
 (let* ([ranges (first ticket-info)]
@@ -75,15 +45,7 @@
     ticket-val))
 
 ;; part 2
-#|
-
-idea
-
-even though we just need departure, we still need to find out all the field matches
-
-let's start by discarding the invalid numbers
-
-|#
+;; find invalid numbers
 (define invalid-numbers
   (let* ([ranges (first ticket-info)]
          [tickets (third ticket-info)]
@@ -97,7 +59,7 @@ let's start by discarding the invalid numbers
 
 ;; if a ticket contains any invalid value, drop it entirely
 (define (list-contains-any? base-list membership-list)
-  (ormap (lambda (x) (not (not (member x membership-list)))) base-list))
+  (ormap (λ (x) (not (not (member x membership-list)))) base-list))
 
 (define (ranges-contains? ranges v) (ormap (λ~> (range-contains? v)) ranges))
 
@@ -109,17 +71,14 @@ let's start by discarding the invalid numbers
 (define (range-union-contains? ranges v)
   (ormap (λ~> (range-contains? v)) ranges))
 
-(pretty-display
- (apply set-intersect
-  (let* ([fields (first ticket-info)])
-    (for/list ([ticket valid-tickets])
-      (for/fold ([solns (mutable-set)])
-                ([perm (in-permutations fields)]
-                 #:when (andmap (λ (ru t) (range-union-contains? ru t)) (map field-ranges perm) ticket)
-                 #:break (equal? (set-count solns) 1))
-        (let ([res (map field-name perm)])
-          (if (set-empty? solns)
-              res
-              (begin
-                ;; (displayln solns)
-                (set-intersect res solns)))))))))
+(apply set-intersect
+       (let* ([fields (first ticket-info)])
+         (for/list ([ticket valid-tickets])
+           (for/fold ([solns (mutable-set)])
+                     ([perm (in-permutations fields)]
+                      #:when (andmap (λ (ru t) (range-union-contains? ru t)) (map field-ranges perm) ticket)
+                      #:break (equal? (set-count solns) 1))
+             (let ([res (map field-name perm)])
+               (if (set-empty? solns)
+                   res
+                   (set-intersect res solns)))))))

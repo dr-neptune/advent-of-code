@@ -4,25 +4,6 @@
 (define hw (~> (fetch-aoc-input (find-session) 2020 18)
                (string-split "\n")))
 
-(define hw '("2 * 3 + (4 * 5)"                                     ;; becomes 26.
-             "5 + (8 * 3 + 9 + 3 * 4 * 3)"                         ;; becomes 437.
-             "5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))"           ;;  becomes 12240.
-             "((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2"))   ;; becomes 13632
-
-#|
-
-part 1
-approach:
-- clean up the expressions
-- write a function that evaluates simple, non-nested expressions left to right
-  without regard for operator precedence.
-- write a function that finds each interior paren set and makes a structure that
-  gives an (expression, interior expression, (opening indx, ending idx) evaluated-value)
-- build a new string that turns interior parens into the evaluated value
-- loop until the entire expression has no parens, then eval-simple value
-
-|#
-
 (define (try func [else-func identity])
   (λ (x)
     (let ([result (func x)])

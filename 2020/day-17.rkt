@@ -3,10 +3,7 @@
 
 (define cubes
   (~>>
-;; ".#.
-;; ..#
-;; ###"
- (fetch-aoc-input (find-session) 2020 17)
+   (fetch-aoc-input (find-session) 2020 17)
    (string-split _ "\n")
    (map string->list)))
 
@@ -50,7 +47,7 @@
 (define (simulate-cycles active-cubes cycles)
   (define current-active active-cubes)
   (for ([i (in-range cycles)])
-    (set! current-active (next-cycle current-active)))
+    (set! current-active (next-step current-active)))
   current-active)
 
 ;; part 1
