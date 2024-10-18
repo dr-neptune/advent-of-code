@@ -3,6 +3,7 @@
 
 (define cups
   (~>> "389125467"
+       ;; "167248359"
        (string-split _ "")
        (filter (compose not (curry equal? "")))
        (map string->number)))
@@ -171,3 +172,108 @@ idx 3 is 2, so we take idx 1 giving us 2. If we were idx 0, we would take 7
                                    (add1 (index-of unordered-subset-circle destination)) pick-up)]
            [next-curr-idx (if (>= current-cup-idx (length cups)) 0 (add1 current-cup-idx))])
       (values next-curr-idx new-order))))
+
+
+;; idea
+;; move the current cup to the front each iteration?
+#|
+
+if we do that, then we must
+
+
+|#
+
+(define (list-reorder-first ls v)
+  (let ([val-idx (index-of ls v)])
+    (append (drop ls val-idx)
+            (take ls val-idx))))
+
+(list-reorder-first '(1 2 3 4 5) 3)
+(list-reorder-first '(1 2 3 4 5) 4)
+(list-reorder-first '(1 2 3 4 5) 1)
+
+(list-reorder-first (for/fold ([curr-idx 0] [cups cups]
+                                            #:result cups)
+                              ([idx (in-range 0 100)])
+  (let* ([current-cup-idx curr-idx]
+         [current-cup (list-ref cups current-cup-idx)]
+         [pick-up (take (drop cups (add1 current-cup-idx)) 3)]
+         [unordered-subset-circle (filter (λ (v) (not (member v pick-up))) cups)]
+         [ordered-subset-circle (sort unordered-subset-circle <)]
+         [destination (let ([curr-cup-sorted-idx (index-of ordered-subset-circle current-cup)])
+                        (if (zero? curr-cup-sorted-idx)
+                            (last ordered-subset-circle)
+                            (list-ref ordered-subset-circle (sub1 curr-cup-sorted-idx))))]
+         [new-order (list-reorder-first (list-insert unordered-subset-circle
+                                                     (add1 (index-of unordered-subset-circle destination)) pick-up)
+                                        current-cup)]
+         [next-curr-idx (if (>= current-cup-idx (length cups)) 0 (add1 current-cup-idx))])
+    ;; (displayln (format "curr: ~a pick: ~a dest: ~a new: ~a"
+    ;;                    current-cup
+    ;;                    pick-up
+    ;;                    destination
+    ;;                    new-order))
+    (values 1 new-order))) 1)
+
+
+(~> (for/fold ([curr-idx 0] [cups cups] #:result cups)
+              ([idx (in-range 0 10)])
+  (let* ([current-cup-idx curr-idx]
+         [current-cup (list-ref cups current-cup-idx)]
+         [pick-up (take (drop cups (add1 current-cup-idx)) 3)]
+         [unordered-subset-circle (filter (λ (v) (not (member v pick-up))) cups)]
+         [ordered-subset-circle (sort unordered-subset-circle <)]
+         [destination (let ([curr-cup-sorted-idx (index-of ordered-subset-circle current-cup)])
+                        (if (zero? curr-cup-sorted-idx)
+                            (last ordered-subset-circle)
+                            (list-ref ordered-subset-circle (sub1 curr-cup-sorted-idx))))]
+         [new-order (list-reorder-first (list-insert unordered-subset-circle
+                                                     (add1 (index-of unordered-subset-circle destination)) pick-up)
+                                        current-cup)])
+    (values 1 new-order)))
+    (list-reorder-first 1)
+    (drop 1))
+
+
+
+
+(for/fold ([curr-idx 0] [cups cups] #:result cups)
+              ([idx (in-range 0 10)])
+  (let* ([current-cup-idx curr-idx]
+         [current-cup (list-ref cups current-cup-idx)]
+         [pick-up (take (drop cups (add1 current-cup-idx)) 3)]
+         [unordered-subset-circle (filter (λ (v) (not (member v pick-up))) cups)]
+         [ordered-subset-circle (sort unordered-subset-circle <)]
+         [destination (let ([curr-cup-sorted-idx (index-of ordered-subset-circle current-cup)])
+                        (if (zero? curr-cup-sorted-idx)
+                            (last ordered-subset-circle)
+                            (list-ref ordered-subset-circle (sub1 curr-cup-sorted-idx))))]
+         [new-order (list-reorder-first (list-insert unordered-subset-circle
+                                                     (add1 (index-of unordered-subset-circle destination)) pick-up)
+                                        current-cup)])
+    (values 1 new-order)))
+
+#|
+
+part 2
+idea
+
+maybe use streams? Then we don't really need to worry about memory blowing up
+do we need to worry about time?
+
+|#
+
+(for/fold ([curr-idx 0] [cups cups] #:result cups)
+          ([idx (in-range 0 10)])
+  (let* ([current-cup (list-ref cups curr-idx)]
+         [pick-up (take (drop cups (add1 curr-idx)) 3)]
+         [unordered-subset-circle (filter (λ (v) (not (member v pick-up))) cups)]
+         [ordered-subset-circle (sort unordered-subset-circle <)]
+         [destination (let ([curr-cup-sorted-idx (index-of ordered-subset-circle current-cup)])
+                        (if (zero? curr-cup-sorted-idx)
+                            (last ordered-subset-circle)
+                            (list-ref ordered-subset-circle (sub1 curr-cup-sorted-idx))))]
+         [new-order (list-reorder-first (list-insert unordered-subset-circle
+                                                     (add1 (index-of unordered-subset-circle destination)) pick-up)
+                                        current-cup)])
+    (values 1 new-order)))
