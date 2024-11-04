@@ -1,5 +1,5 @@
 #lang racket
-(require racket threading advent-of-code megaparsack megaparsack/text)
+(require racket racket/hash threading advent-of-code megaparsack megaparsack/text)
 
 (define tile-map
   (~>
@@ -66,4 +66,16 @@ then keep a hash table showing unique end-points, their colors, and whether they
          [final-angle (remainder (apply + angles) 360)])
     (list distance final-angle)))
 
-(map get-location tile-map)
+(pretty-print (map get-location tile-map))
+
+
+(for/hash ([p (map get-location tile-map)])
+  (values p "black"))
+
+(pretty-display
+ (let ([hsh (make-hash)])
+  (for ([p (map get-location tile-map)])
+    (hash-update! hsh p add1 1))
+  (hash-filter-values hsh even?)))
+
+;; then take a mod? odd is black, even is white
