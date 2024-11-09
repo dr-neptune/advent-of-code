@@ -1,81 +1,94 @@
 #lang racket
-(require racket racket/hash threading advent-of-code megaparsack megaparsack/text)
+(require racket racket/hash threading advent-of-code)
 
 (define tile-map
-  (~>
-   ;; "esenee"
-   "sesenwnenenewseeswwswswwnenewsewsw
-neeenesenwnwwswnenewnwwsewnenwseswesw
-seswneswswsenwwnwse
-nwnwneseeswswnenewneswwnewseswneseene
-swweswneswnenwsewnwneneseenw
-eesenwseswswnenwswnwnwsewwnwsene
-sewnenenenesenwsewnenwwwse
-wenwwweseeeweswwwnwwe
-wsweesenenewnwwnwsenewsenwwsesesenwne
-neeswseenwwswnwswswnw
-nenwswwsewswnenenewsenwsenwnesesenew
-enewnwewneswsewnwswenweswnenwsenwsw
-sweneswneswneneenwnewenewwneswswnese
-swwesenesewenwneswnwwneseswwne
-enesenwswwswneneswsenwnewswseenwsese
-wnwnesenesenenwwnenwsewesewsesesew
-nenewswnwewswnenesenwnesewesw
-eneswnwswnwsenenwnwnwwseeswneewsenese
-neswnwewnwnwseenwseesewsenwsweewe
-wseweeenwnesenwwwswnew"
+  (~> (fetch-aoc-input (find-session) 2020 24)
    (string-split "\n")))
-   ;; (map (compose
-   ;;       (curry filter (λ (s) ((compose not zero?) (string-length s))))
-   ;;       (curryr string-split "")) _)))
 
-#|
-
-idea
-
-first maybe we start by just parsing the directions
-
-then we probably don't have a way to build the full board, we just have trails that lead to a given tile.
-
-we need to find isomorphisms. Maybe we can do something like a distance
-metric?
-
-update: distance + angle makes sense to me
-
-make a way to track distance + angle over the course of a given input string
-then keep a hash table showing unique end-points, their colors, and whether they have been flipped
-
-|#
-
-;; parsing
-(define (get-angle dir)
-  (let ([angle-hsh (make-hash '(("ne" 60)
-                                ("se" 300)
-                                ("sw" 240)
-                                ("nw" 120)
-                                ("w" 180)
-                                ("e" 0)))])
-    (first (hash-ref angle-hsh dir))))
-
+;; parse string into individual directoins
 (define (parse-directions input)
   (regexp-match* #rx"(se|sw|ne|nw|e|w)" input))
 
-(define (get-location str)
-  (let* ([angles (map get-angle (parse-directions str))]
-         [distance (length angles)]
-         [final-angle (remainder (apply + angles) 360)])
-    (list distance final-angle)))
 
-(pretty-print (map get-location tile-map))
+;; part 1
 
+(define axial-coordinate-diff-hash
+  ;; (dq dr) where q is northwest and r is east
+  ;; see https://www.redblobgames.com/grids/hexagons/
+  (make-hash '(("ne" (1 -1))
+               ("se" (0 1))
+               ("sw" (-1 1))
+               ("nw" (0 -1))
+               ("w" (-1 0))
+               ("e" (1 0)))))
 
-(for/hash ([p (map get-location tile-map)])
-  (values p "black"))
+(define (get-final-location str)
+  (let ([parsed-string (parse-directions str)])
+    (foldl (λ (pair orig) (list (+ (first pair) (first orig))
+                                (+ (second pair) (second orig))))
+           (list 0 0)
+           (map (compose first (curry hash-ref axial-coordinate-diff-hash)) parsed-string))))
 
-(pretty-display
- (let ([hsh (make-hash)])
-  (for ([p (map get-location tile-map)])
-    (hash-update! hsh p add1 1))
-  (hash-filter-values hsh even?)))
+(define (val->color val)
+  (if (odd? val) 'black 'white))
 
-;; then take a mod? odd is black, even is white
+(define location-visits
+  (let ([hsh (make-hash)])
+    (for ([p (map get-final-location tile-map)])
+      (hash-update! hsh p add1 0))
+    ;; set odds to black, evens to white
+    (for ([(loc val) (in-hash hsh)])
+      (hash-set! hsh loc (val->color val)))
+    hsh))
+
+(hash-count (hash-filter-values location-visits (curry equal? 'black)))
+
+;; part 2
+(define neighbor-offsets '((1 -1) (1 0) (0 1) (-1 1) (-1 0) (0 -1)))
+
+(define (get-neighbors loc)
+  (map (λ (offset)
+         (map + loc offset))
+       neighbor-offsets))
+
+(define (rule-check curr-color black-count)
+  (match curr-color
+    ['black (if (or (equal? black-count 0) (> black-count 2))
+                'white
+                'black)]
+    ['white (if (equal? black-count 2)
+                'black
+                'white)]))
+
+(define (add-peripherals black-tiles)
+  (let ([tiles-set (make-hash)])
+    (for ([tile (in-hash-keys black-tiles)])
+      (begin
+        (hash-set! tiles-set tile 'black)
+        (for ([neighbor (get-neighbors tile)])
+          (unless (hash-has-key? tiles-set neighbor)
+            (hash-set! tiles-set neighbor 'white)))))
+    tiles-set))
+
+(define is-black? (curry equal? 'black))
+
+(define (next-step black-tiles)
+  (let ([loc-with-periph (add-peripherals black-tiles)]
+        [new-hsh (make-hash)])
+    (for/list ([(loc color) (in-hash loc-with-periph)])
+      (let* ([adjacents (get-neighbors loc)]
+             [black-adj (hash-filter-values
+                         (hash-filter-keys loc-with-periph (λ (k) (member k adjacents)))
+                         (curry equal? 'black))]
+             [black-count (hash-count black-adj)])
+        (let ([new-color (rule-check color black-count)])
+          (hash-set! new-hsh loc new-color))))
+    new-hsh))
+
+(let ([lobby-layout (hash-filter-values location-visits is-black?)])
+  (for ([idx (in-inclusive-range 0 100)])
+    (when (equal? (remainder idx 10) 0)
+      (displayln (format "idx: ~a num-blacks: ~a" idx (hash-count (hash-filter-values lobby-layout is-black?)))))
+    (set! lobby-layout
+          (hash-filter-values (next-step lobby-layout) is-black?)))
+  (hash-count (hash-filter-values lobby-layout is-black?)))
