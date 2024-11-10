@@ -11,7 +11,6 @@
 
 
 ;; part 1
-
 (define axial-coordinate-diff-hash
   ;; (dq dr) where q is northwest and r is east
   ;; see https://www.redblobgames.com/grids/hexagons/

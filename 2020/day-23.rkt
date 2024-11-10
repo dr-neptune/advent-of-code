@@ -3,7 +3,6 @@
 
 (define cups
   (~>> "389125467"
-       ;; "167248359"
        (string-split _ "")
        (filter (compose not (curry equal? "")))
        (map string->number)))
@@ -14,24 +13,6 @@
   (if (equal? (stream-first st) v)
       st
       (stream-take-until (stream-rest st) v)))
-
-;; (let ([input-cups cups])
-;;   (let loop ([cups (sequence->stream (in-cycle input-cups))])
-;;     (let* ([curr-cup-label (stream-first cups)]
-;;            [pick-up (stream->list (stream-take (stream-rest cups) 3))]
-;;            [not-pick-up? (λ (v) (false? (member v pick-up)))]
-;;            [destination-set (filter not-pick-up? input-cups)]
-;;            [destination (let loop ([seek (sub1 curr-cup-label)])
-;;                           (cond [(< seek (apply min destination-set)) (apply max destination-set)]
-;;                                 [(member seek destination-set) seek]
-;;                                 [else (loop (sub1 seek))]))]
-;;            [filtered-stream (stream-filter (λ (v) (false? (member v pick-up))) (stream-rest cups))]
-;;            [new-stream (stream-rest (stream-take-until filtered-stream destination))])
-;;       (begin
-;;         (displayln (format "~a ~a ~a" curr-cup-label pick-up destination))
-;;         (loop (stream-append (stream (in-list pick-up)) new-stream) (add1 curr-cup)))
-;;       )))
-
 
 (define (list-reorder-first ls v)
   (let ([val-idx (index-of ls v)])
