@@ -1,22 +1,6 @@
 #lang racket
 (require racket racket/hash threading advent-of-code)
 
-#|
-
-idea
-
-things missing from the list aren't 0, you just don't remember
-so missing items are a ?
-
-mfc
-
-sues
-
-for each sue in sues
-see how many items are in common with mfc
-
-|#
-
 (define sues
   (~> (fetch-aoc-input (find-session) 2015 16)
       (string-split "\n")))
