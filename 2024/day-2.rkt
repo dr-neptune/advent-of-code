@@ -1,48 +1,32 @@
 #lang racket
-(require racket threading advent-of-code srfi/1 algorithms)
+(require racket
+         threading
+         advent-of-code
+         algorithms)
 
 (define reports (~> (fetch-aoc-input (find-session) 2024 2 #:cache #t)
                     (string-split "\n")
                     (map
                      (λ~> (string-split " ") (map string->number _)) _)))
 
-;; part 1
-(define (small-jumps? ls)
-  (all? (map (λ (a b) (let ([diff (abs (- b a))])
-                        (and (<= 1 diff) (<= diff 3)))) ls (rest ls))))
+(define (is-increasing? ls)
+  (all? (adjacent-map (λ (a b) (and (< a b) (<= 1 (- b a) 3))) ls)))
 
+(define (is-decreasing? ls)
+  (all? (adjacent-map (λ (a b) (and (> a b) (<= 1 (- a b) 3))) ls)))
+
+(define (is-safe ls) (or (is-increasing? ls) (is-decreasing? ls)))
+
+;; part 1
 (for/sum ([ls reports]
-          #:when (and (or (increasing? ls) (increasing? (reverse ls)))
-                      (small-jumps? ls)))
+          #:when (is-safe ls))
   1)
 
 ;; part 2
-#|
+(define (is-safe-with-dampener ls)
+  (or (is-safe ls)
+      (ormap (λ (i)
+               (is-safe (append (take ls i) (drop ls (+ i 1)))))
+             (build-list (length ls) values))))
 
-idea
-iterate through the lists, and at each step ensure that the conditions are satisfied
-keep a count of 1
-if you face an error, drop count to 0 and continue
-if you face another error, raise an issue
-
-|#
-
-(define (increasing/intermediate? ls)
-  (map < ls (rest ls)))
-
-(increasing/intermediate? '(1 2 3 4 4))
-
-
-
-(let ([ls '(8 6 4 4 1)])
-  (let ([mono-check (increasing/intermediate? ls)])
-    (if (< (or (count false? mono-check)
-               (count (compose not false?) mono-check)) 2)
-        (small-jumps? ())
-        #f))
-  )
-
-
-(for/sum ([ls reports]
-          #:when (safe-report? ls))
-  1)
+(count identity (map is-safe-with-dampener reports))
