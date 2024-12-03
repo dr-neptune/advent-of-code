@@ -2,13 +2,10 @@
 (require racket threading advent-of-code)
 
 (define (parse-muls str)
-  (define rxpat #rx"mul\\([0-9]+,[0-9]+\\)")
+  (define rxpat #rx"mul\\(([0-9]+),([0-9]+)\\)")
   (~>> str
-      (regexp-match* rxpat _)
-      (map (λ (s) (~> s
-                      (substring 4 (sub1 (string-length s)))
-                      (string-split ",")
-                      (map string->number _))))))
+       (regexp-match* rxpat #:match-select cdr)
+       (map (λ~>> (map string->number)))))
 
 (define memory (fetch-aoc-input (find-session) 2024 3 #:cache #t))
 
@@ -18,10 +15,7 @@
 (~> memory parse-muls dprod)
 
 ;; part 2
-(define dont_do_pat #rx"don't\\(\\).*?do\\(\\)")
+(define do_pat #rx"do\\(\\).*?don't\\(\\)")
 
-(let* ([drop-matches (regexp-match* dont_do_pat memory)])
-  (for/fold ([mem memory]
-             #:result (~> mem parse-muls dprod))
-            ([mat drop-matches])
-    (string-replace mem mat "")))
+(let* ([drop-matches (regexp-match* do_pat memory)])
+  (~>> drop-matches (append-map parse-muls) dprod))
