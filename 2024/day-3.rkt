@@ -16,6 +16,4 @@
 
 ;; part 2
 (define do_pat #rx"do\\(\\).*?don't\\(\\)")
-
-(let* ([drop-matches (regexp-match* do_pat memory)])
-  (~>> drop-matches (append-map parse-muls) dprod))
+(~>> (regexp-match* do_pat memory) (append-map parse-muls) dprod)
