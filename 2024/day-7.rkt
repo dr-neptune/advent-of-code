@@ -10,17 +10,17 @@
        (string-split (fetch-aoc-input (find-session) 2024 7 #:cache #t) "\n")))
 
 (define (interleave ls1 ls2)
-  (if (null? ls1) ls2 (cons (car ls1) (interleave ls2 (cdr ls1)))))
+  (match ls1
+    ['() ls2]
+    [_ (cons (car ls1) (interleave ls2 (cdr ls1)))]))
 
-(define/memoize (n-cart-prod elements size)
-  (apply cartesian-product (make-list size elements)))
+(define/memoize (n-cart-prod elements size) (apply cartesian-product (make-list size elements)))
 
 (define/memoize (r->l-eval ls)
-  (let loop ([ls ls])
-    (match ls
-      [(list a) a]
-      [(list a b c _ ...)
-       (loop (cons (b a c) (cdddr ls)))])))
+  (match ls
+    [(list a) a]
+    [(list a b c _ ...)
+     (r->l-eval (cons (b a c) (cdddr ls)))]))
 
 (define (calculate-calibrations equations operators)
   (let ([get-op-match (λ (sum summands)
