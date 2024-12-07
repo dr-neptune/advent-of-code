@@ -16,12 +16,12 @@
   (apply cartesian-product (make-list size elements)))
 
 (define/memoize (r->l-eval ls)
-  (let loop ([stack '()] [ls ls])
-    (if (empty? ls) (first stack)
-        (match-let ([(list* fele rele) ls])
-          (if (number? fele)
-              (loop (cons fele stack) rele)
-              (loop (list (fele (first stack) (car rele))) (rest rele)))))))
+  (let loop ([ls ls])
+    (match ls
+      [(list a) a]
+      [(list a b c _ ...)
+       (loop (cons (b a c) (cdddr ls)))])))
+
 
 (define (calculate-calibrations equations operators)
   (let ([get-op-match (λ (sum summands)
@@ -39,6 +39,6 @@
 (calculate-calibrations equations (list + *))
 
 ;; pt 2
-(define (|| a b) (~>> (list a b) (map number->string) (apply string-append) string->number))
+(define (conc a b) (~>> (list a b) (map number->string) (apply string-append) string->number))
 
-(calculate-calibrations equations (list || + *))
+(calculate-calibrations equations (list conc + *))
