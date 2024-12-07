@@ -22,7 +22,6 @@
       [(list a b c _ ...)
        (loop (cons (b a c) (cdddr ls)))])))
 
-
 (define (calculate-calibrations equations operators)
   (let ([get-op-match (λ (sum summands)
            (for/first ([operator-combination (n-cart-prod operators (sub1 (length summands)))]
