@@ -1,5 +1,5 @@
 #lang racket
-(require racket racket/hash memo threading advent-of-code)
+(require racket threading advent-of-code)
 
 (define guard-map
   (~> (fetch-aoc-input (find-session) 2024 6 #:cache #t)  ;; 130x130
