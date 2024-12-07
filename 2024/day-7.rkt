@@ -38,6 +38,6 @@
 (calculate-calibrations equations (list + *))
 
 ;; pt 2
-(define (conc a b) (~>> (list a b) (map number->string) (apply string-append) string->number))
+(define (|| a b) (~>> (list a b) (map number->string) (apply string-append) string->number))
 
-(calculate-calibrations equations (list conc + *))
+(calculate-calibrations equations (list || + *))
