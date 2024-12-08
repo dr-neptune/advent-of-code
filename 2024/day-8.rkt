@@ -17,11 +17,9 @@
 
 (define (get-antipodes antenna-char [reflect-fn reflect])
   (let* ([satellite-locations (get-locations/2D city antenna-char)])
-    (flatten/1
-     (for/list ([satellite satellite-locations])
-       (let* ([other-satellites (remove satellite satellite-locations)])
-         (for/list ([other-satellite other-satellites])
-           (reflect-fn other-satellite satellite)))))))
+    (for*/list ([satellite satellite-locations]
+                [other-satellite (remove satellite satellite-locations)])
+      (reflect-fn other-satellite satellite))))
 
 ;; part 1
 (~> (map get-antipodes antennae) flatten/1 (filter (compose not empty?) _) remove-duplicates length)
