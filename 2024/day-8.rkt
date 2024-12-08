@@ -16,7 +16,7 @@
     (if (apply within-bounds refl) refl '())))
 
 (define (get-antipodes antenna-char [reflect-fn reflect])
-  (let* ([satellite-locations (get-locations/2D city antenna-char)])
+  (let ([satellite-locations (get-locations/2D city antenna-char)])
     (for*/list ([satellite satellite-locations]
                 [other-satellite (remove satellite satellite-locations)])
       (reflect-fn other-satellite satellite))))
