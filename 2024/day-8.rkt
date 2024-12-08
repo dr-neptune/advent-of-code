@@ -29,7 +29,7 @@
   (let ([refl (reflect coord origin)])
     (if (empty? refl) '() (cons refl (reflect* origin refl)))))
 
-(~> (append (~> (map (curryr get-antipodes reflect*) antennae) flatten/2)
-            (~> (map (curry get-locations/2D city) antennae) flatten/1))
+(~> (append (flatten/2 (map (curryr get-antipodes reflect*) antennae))
+            (flatten/1 (map (curry get-locations/2D city) antennae)))
     remove-duplicates
     length)
