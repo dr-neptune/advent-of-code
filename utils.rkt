@@ -1,5 +1,5 @@
 #lang racket
-(require racket threading advent-of-code)
+(require racket threading advent-of-code (only-in srfi/1 unfold-right))
 
 (define (get-aoc year day)
   (fetch-aoc-input (find-session) year day #:cache #t))
@@ -26,4 +26,8 @@
 (define flatten/1 flatten-depth)
 (define flatten/2 (curryr flatten-depth 2))
 
-(provide string->grid/2D get-cell/2D get-locations/2D flatten-depth flatten/1 flatten/2 get-aoc)
+(define (int->digit-list int)
+  (unfold-right zero? (curryr remainder 10) (curryr quotient 10) int))
+
+(provide string->grid/2D get-cell/2D get-locations/2D flatten-depth flatten/1 flatten/2 get-aoc
+         int->digit-list)
