@@ -3,8 +3,6 @@
 
 (define disk-map (~> (get-aoc 2024 9) (string-split "\n") first string->number int->digit-list))
 
-(define disk-map (int->digit-list 2333133121414131402))
-
 (define (translate-map disk-map)
   (for/fold ([updated-space '()] [id-idx 0]
              #:result (reverse updated-space))
