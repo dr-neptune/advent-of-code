@@ -10,8 +10,8 @@
   (define B (col-matrix [(+ add goal-x) (+ add goal-y)]))
   (matrix-solve M B))
 
-(define (solve-equations eqn [solver-fn (curry apply solve-equation)])
-  (for/sum ([eqn claw-motion]
+(define (solve-equations eqns [solver-fn (curry apply solve-equation)])
+  (for/sum ([eqn eqns]
             #:do [(match-define (list a b) (array->list (solver-fn eqn)))]
             #:when (andmap integer? (list a b)))
     (+ (* 3 a) b)))
