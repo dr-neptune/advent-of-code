@@ -20,5 +20,5 @@
 ;; part 2
 (for/sum ([eqn claw-motion]
           #:do [(match-define (list a b) (array->list (apply (curryr solve-equation 10000000000000) eqn)))]
-           #:when (andmap integer? (list a b)))
+          #:when (andmap integer? (list a b)))
   (+ (* 3 a) b))
