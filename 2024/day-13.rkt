@@ -21,3 +21,37 @@
 
 ;; part 2
 (solve-equations claw-motion (curry apply (curryr solve-equation 10000000000000)))
+
+
+;; with GLPK
+#lang racket
+(require glpk)
+
+(define (solve-equation-ilp x1 y1 x2 y2 goal-x goal-y [offset 0])
+  (define objective `(0 (3 a) (1 b)))   ; 3a + b
+  (define direction 'min)
+  (define constraints
+    `((c1 (,x1 a) (,x2 b))
+      (c2 (,y1 a) (,y2 b))))
+  (define bounds
+    `((c1 ,(+ offset goal-x) ,(+ offset goal-x))
+      (c2 ,(+ offset goal-y) ,(+ offset goal-y))
+      (a 0 posinf)
+      (b 0 posinf)))
+  (define integer-vars '(a b))
+  (mip-solve objective direction constraints bounds integer-vars))
+
+(define (solve-equations-ilp eqns [offset 0])
+  (inexact->exact
+   (for/sum ([eqn eqns]
+             #:do [(match-define (list x1 y1 x2 y2 gx gy) eqn)]
+             [res (solve-equation-ilp x1 y1 x2 y2 gx gy offset)]
+             #:when (list? res))
+     (match-let ([(list result _) res])
+       result))))
+
+;; part 1
+(solve-equations-ilp claw-motion)
+
+;; part 2
+((curryr solve-equations-ilp 10000000000000) claw-motion)
