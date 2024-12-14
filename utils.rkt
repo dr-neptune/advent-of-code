@@ -34,16 +34,18 @@
               #:when (equal? (get-cell/2D puzzle col-idx row-idx) char))
     (list col-idx row-idx)))
 
-(define (get-nearby/2D vec x y [directions directions/nesw])
+(define (get-nearby/2D vec x y #:dirs [dirs directions/nesw] #:bound? [bound? #t])
   (define vec-width (sub1 (vector-length (vector-ref vec 0))))
   (define vec-height (sub1 (vector-length vec)))
 
   (define (safe? nx ny)
-    (and (<= 0 nx vec-width) (<= 0 ny vec-height)))
+    (if bound?
+        (and (<= 0 nx vec-width) (<= 0 ny vec-height))
+        #t))
 
   (filter (curry apply safe?)
        (map (λ~> (map + _ (list x y)))
-            directions)))
+            dirs)))
 
 (define (flatten-depth lst [depth 1])
   (cond [(<= depth 0) lst]
@@ -58,5 +60,9 @@
 
 (define (char->number char)
   (- (char->integer char) (char->integer #\0)))
+
+(define (dot-product ls1 ls2)
+  (for/sum ([ele1 ls1] [ele2 ls2])
+    (* ele1 ele2)))
 
 (provide (all-defined-out))
