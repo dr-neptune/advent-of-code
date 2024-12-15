@@ -5,10 +5,7 @@
   (~> (get-aoc 2024 14) (string-split "\n")
       (map (λ~>> (regexp-match* #px"[+-]?\\d+") (map string->number)) _)))
 
-;; (match-define (list grid-width grid-height) (list 11 7))
 (match-define (list grid-width grid-height) (list 101 103))
-
-(pretty-print-columns (* 10 grid-width))
 
 (define (calculate-loc s x y vx vy)
   (let rec ([s s] [x x] [y y])
