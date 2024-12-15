@@ -15,10 +15,8 @@
           (rec (sub1 s) (circle new-x grid-width) (circle new-y grid-height))))))
 
 (define (quadrant ele)
-  (match-let* ([(list ele-x ele-y) ele]
-               [v-/ (curryr quotient 2)]
-               [x-/ (v-/ grid-width)]
-               [y-/ (v-/ grid-height)])
+  (match-let* ([(list ele-x ele-y) ele] [v-/ (curryr quotient 2)]
+               [x-/ (v-/ grid-width)] [y-/ (v-/ grid-height)])
     (cond [(and (< ele-x x-/) (< ele-y y-/)) 1]
           [(and (< x-/ ele-x) (< ele-y y-/)) 2]
           [(and (< ele-x x-/) (< y-/ ele-y)) 3]
@@ -27,11 +25,8 @@
 
 ;; part 1
 (~>> robots
-     (map (λ~>> (apply (curry calculate-loc 100)) quadrant))
-     (group-by identity)
-     (filter (λ~> car zero? not))
-     (map length)
-     (apply *))
+     (map (λ~>> (apply (curry calculate-loc 100)) quadrant)) (group-by identity)
+     (filter (λ~> car zero? not)) (map length) (apply *))
 
 ;; part 2
 (define (make-grid-display coords s [max-x grid-width] [max-y grid-height])
@@ -41,12 +36,12 @@
     (for/vector ([row (in-range (add1 max-y))])
       (make-vector (add1 max-x) " ")))
 
+  (define divider (make-vector (+ 4 grid-width) (string-append red "-" reset)))
+
   (for ([pt coords])
     (define x (first pt))
     (define y (second pt))
     (vector-set! (vector-ref grid y) x (string-append green "^" reset)))
-
-  (define divider (make-vector (+ 4 grid-width) (string-append red "-" reset)))
 
   (displayln divider)
   (displayln (string-append green "\t\t\t\tIteration: " (number->string s) reset))
