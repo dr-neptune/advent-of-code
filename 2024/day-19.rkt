@@ -6,7 +6,7 @@
       ((λ (pair) (list (string-split (first pair) ", ")
                        (string-split (second pair) "\n"))))))
 
-(define/memoize (feasible? design)
+(define (feasible? design)
   (let* ([n (string-length design)] [dp (vector-set/copy (make-vector (add1 n) 0) 0 1)])
     (for* ([idx (in-range n)] [pattern towels]
            #:do [(define plen (string-length pattern)) (define vec-offset (+ idx plen))]
