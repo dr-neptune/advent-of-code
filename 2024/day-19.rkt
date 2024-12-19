@@ -10,10 +10,8 @@
   (let* ([n (string-length design)] [dp (vector-set/copy (make-vector (add1 n) 0) 0 1)])
     (for* ([idx (in-range n)] [pattern towels]
            #:do [(define plen (string-length pattern)) (define vec-offset (+ idx plen))]
-           #:when (vector-ref dp idx)
-           #:when (and (<= vec-offset n) (string=? (substring design idx vec-offset) pattern)))
-      (vector-set! dp vec-offset (+ (vector-ref dp vec-offset)
-                                    (vector-ref dp idx))))
+           #:when (and (<= vec-offset n) (string=? (substring design idx vec-offset) pattern) (vector-ref dp idx)))
+      (vector-set! dp vec-offset (+ (vector-ref dp vec-offset) (vector-ref dp idx))))
     (vector-ref dp n)))
 
 ;; pt 1
