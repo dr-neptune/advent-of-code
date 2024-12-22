@@ -1,8 +1,19 @@
 #lang racket
-(require racket threading advent-of-code (only-in srfi/1 unfold-right))
+(require racket threading advent-of-code
+         rebellion/streaming/transducer
+         rebellion/collection/list
+         rebellion/collection/vector
+         (only-in srfi/1 unfold-right))
 
 (define (get-aoc year day)
   (fetch-aoc-input (find-session) year day #:cache #t))
+
+(define (iterate f x) (stream-cons x (iterate f (f x))))
+
+(define (vector-between vec i j) (for/vector ([idx (in-range i j)]) (vector-ref vec idx)))
+
+(define (sliding-window ls n [into into-list])
+  (transduce ls (windowing n) #:into into))
 
 (define (string->grid/2D str)
   (~> str
