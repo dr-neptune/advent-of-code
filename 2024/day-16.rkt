@@ -26,10 +26,17 @@
 (define best-cost (~>> (hash-filter-keys dist-hash (λ (k) (equal? end-loc (take k 2)))) hash-values (apply min)))
 
 ;; pt 2
-;; now we want to get all the nodes that are on a path s.t. we have the optimal score
-;; pt1 gets best path going forward, pt2 finds paths s.t. best path forward == best path backward
+#|
+let best-cost be the minimal overall cost from (start-X, start-Y, east (1)) to (end-X, end-Y, any dir):
 
-;; Reverse each edge: '(cost from to) => '(cost to from)
+best-cost = min_{d \in \{0,1,2,3\}} [dist-from-start(end-X, end-Y, d)]
+
+a state (x,y,d) lies on some best path iff
+dist-from-start(x,y,d) + dist-to-end(x,t,d) = best-cost
+
+find all cells where this is true and then return the set of them
+|#
+
 (define reversed-edges (map (λ (3ple) (list (first 3ple) (third 3ple) (second 3ple))) edges))
 (define reversed-graph (weighted-graph/directed reversed-edges))
 
