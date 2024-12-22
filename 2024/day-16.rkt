@@ -1,55 +1,45 @@
 #lang racket
-(require racket graph threading "../utils.rkt")
+(require racket racket/hash graph threading "../utils.rkt")
 
-#|
+(define grid (~> (get-aoc 2024 16) string->grid/2D))
+(define-values (grid-width grid-height start-loc end-loc)
+  (values (vector-length (vector-ref grid 0)) (vector-length grid) (car (get-locations/2D grid #\S)) (car (get-locations/2D grid #\E))))
 
-idea
+(define (in-bounds? x y) (and (< -1 x grid-width) (< -1 y grid-height) (not (char=? #\# (get-cell/2D grid x y)))))
+(define (forward x y d) (let ([offset (list-ref directions/nesw d)]) (list (+ x (first offset)) (+ y (second offset)) d)))
 
-make a graph
-rm blocks
-find all paths through the graph
-apply any direction changes to the paths
-calculate points
+;; Build a weighted graph '(x y direction)
+(define edges
+  (~>> (for*/list ([x (in-range grid-height)]
+                   [y (in-range grid-width)]
+                   [dir (in-range 4)]
+                   #:when (in-bounds? x y)
+                   #:do [(define from-state (list x y dir))])
+         (list (list 1000 from-state (list x y (modulo (sub1 dir) 4)))
+               (list 1000 from-state (list x y (modulo (add1 dir) 4)))
+               (list 1 from-state (apply forward (list x y dir)))))
+       (apply append)))
 
-|#
+(define-values (dist-hash _) (dijkstra (weighted-graph/directed edges) (list (first start-loc) (second start-loc) 1)))
 
-(define reindeer-map
-  (~> "###############
-#.......#....E#
-#.#.###.#.###.#
-#.....#.#...#.#
-#.###.#####.#.#
-#.#.#.......#.#
-#.#.#####.###.#
-#...........#.#
-###.#.#####.#.#
-#...#.....#.#.#
-#.#.#.###.#.#.#
-#.....#...#.#.#
-#.###.#.#.#.#.#
-#S..#.....#...#
-###############"
-      string->grid/2D))
+;; pt 1
+(define best-cost (~>> (hash-filter-keys dist-hash (λ (k) (equal? end-loc (take k 2)))) hash-values (apply min)))
 
-(define-values (grid-width grid-height) (values (vector-length (vector-ref reindeer-map 0))
-                                                (vector-length reindeer-map)))
+;; pt 2
+;; now we want to get all the nodes that are on a path s.t. we have the optimal score
+;; pt1 gets best path going forward, pt2 finds paths s.t. best path forward == best path backward
 
+;; Reverse each edge: '(cost from to) => '(cost to from)
+(define reversed-edges (map (λ (3ple) (list (first 3ple) (third 3ple) (second 3ple))) edges))
+(define reversed-graph (weighted-graph/directed reversed-edges))
 
-(define (get-nearby/2D x y #:dirs [dirs directions/nesw] #:bound? [bound? #t])
-  (define (safe? nx ny) (if bound? (and (<= 0 nx grid-width) (<= 0 ny grid-height)) #t))
-  (filter (curry apply safe?) (map (λ~> (map + _ (list x y))) dirs)))
+;; dummy node with cost 0 is a hack to run dijkstra from several source nodes at once
+(for ([dir (in-range 4)]) (add-directed-edge! reversed-graph 'dummy (append end-loc (list dir)) 0))
 
-(define reindeer-graph
-  (let ([graph-base (for*/list ([x (in-inclusive-range 0 grid-width)]
-                                [y (in-inclusive-range 0 grid-height)])
-                      (list x y))])
-    (unweighted-graph/adj (for/list ([node graph-base]) (cons node (apply get-nearby/2D node))))))
+(define-values (dist-hash-rev _) (dijkstra reversed-graph 'dummy))
 
-(for ([wall (in-list (get-locations/2D reindeer-map #\#))])
-  (remove-vertex! reindeer-graph wall))
-
-(get-locations/2D reindeer-map #\S)
-(get-locations/2D reindeer-map #\E)
-
-(~> reindeer-graph (dijkstra (first (get-locations/2D reindeer-map #\S))))
-(~> reindeer-graph (bfs (first (get-locations/2D reindeer-map #\S))))
+(~> (for/hash ([(state distF) (in-hash dist-hash)]
+               #:do [(define distR (hash-ref dist-hash-rev state +inf.0))]
+               #:when (= (+ distF distR) best-cost))
+      (values (take state 2) #t))
+    hash-count)
