@@ -12,9 +12,7 @@
 (for/fold ([num 50] [zeros 0])
           ([turn rotation-doc])
   (let ([curr (modulo (+ num turn) 100)])
-    (if (zero? curr)
-        (values curr (add1 zeros))
-        (values curr zeros))))
+    (values curr (+ zeros (if (zero? curr) 1 0)))))
 
 ;; part 2: also count passes over zero mid-rotation
 (define (count-zeros num turn)
